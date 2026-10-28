@@ -102,6 +102,8 @@ label { font-size: 13px; color: var(--mut); font-weight: 700; }
 .rt { text-align: right; }
 .rt small, .rt b { display: block; }
 .row input { width: 96px; padding: 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
+
+/* Calendário e Mini-Calendários */
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 12px; }
 .cal-head { text-align: center; font-size: 12px; font-weight: 700; color: var(--mut); padding: 4px 0; }
 .cal-day { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 4px; min-height: 58px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; text-align: left; position: relative; width: 100%; }
@@ -114,6 +116,14 @@ label { font-size: 13px; color: var(--mut); font-weight: 700; }
 .cal-badge.in { background: rgba(29,122,62,0.18); color: var(--ok); }
 .cal-badge.out { background: rgba(179,38,30,0.18); color: var(--bad); }
 .cal-badge.wk { background: rgba(58,91,217,0.18); color: var(--v); }
+
+.mini { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 6px; }
+.mini .mh { text-align: center; font-size: 11px; color: var(--mut); font-weight: 700; }
+.mini button { padding: 10px 0; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-weight: 700; font-size: 14px; cursor: pointer; }
+.mini button.on { background: var(--c); border-color: var(--c); color: var(--bg); }
+.mini button.pass { opacity: 0.4; }
+.mini .bl { visibility: hidden; }
+
 .bar { height: 8px; background: var(--line); border-radius: 6px; overflow: hidden; margin: 0 0 6px; }
 .bar i { display: block; height: 100%; background: var(--ok); border-radius: 6px; }
 textarea { font: inherit; }
@@ -126,13 +136,13 @@ textarea { font: inherit; }
 </head>
 <body>
 
-<!-- ECRÃ DE LOGIN / CRIAR CONTA -->
+<!-- TELA DE LOGIN / CRIAR CONTA -->
 <div id="auth-screen" style="display:none; max-width: 400px; margin: 40px auto; padding: 20px; background: var(--card); border: 1px solid var(--line); border-radius: 12px;">
   <h2 id="auth-title" style="text-align:center; margin-top:0;">Entrar na sua Conta</h2>
   <div class="card fld" style="border:none; padding:0; background:transparent;">
     <label>E-mail</label>
     <input type="email" id="auth-email" placeholder="seu@email.com" style="margin-bottom:10px;">
-    <label>Palavra-passe (Senha)</label>
+    <label>Senha</label>
     <input type="password" id="auth-pass" placeholder="••••••••" style="margin-bottom:14px;">
     <button class="add" id="auth-btn" style="background:var(--c); color:var(--bg);">Entrar</button>
     <button class="del" id="auth-switch" style="border:none; background:transparent; color:var(--v); margin-top:10px; cursor:pointer; width:100%;">Não tem conta? Criar uma agora</button>
@@ -165,11 +175,9 @@ var firebaseConfig = {
   appId: "1:425198285823:web:34162e9c00afc1be5a6dca"
 };
 
-// Inicializar Firebase
 firebase.initializeApp(firebaseConfig);
 var auth = firebase.auth();
 var db = firebase.firestore();
-
 var currentUserUid = null;
 
 // ==========================================
@@ -257,14 +265,12 @@ function cloudPull(uid) {
         }
       } catch(e){}
     }
-    // Se nuvem estiver vazia, envia o local atual
     cloudPush();
   }).catch(function(){
     setSync("⚠️ Modo offline: usando dados locais");
   });
 }
 
-// Monitor de Sessão Firebase Auth
 auth.onAuthStateChanged(function(user) {
   if (user) {
     currentUserUid = user.uid;
@@ -279,12 +285,11 @@ auth.onAuthStateChanged(function(user) {
   }
 });
 
-// Ações de Login e Registo
 var isRegMode = false;
 document.getElementById("auth-switch").addEventListener("click", function(){
   isRegMode = !isRegMode;
   document.getElementById("auth-title").textContent = isRegMode ? "Criar Nova Conta" : "Entrar na sua Conta";
-  document.getElementById("auth-btn").textContent = isRegMode ? "Registar" : "Entrar";
+  document.getElementById("auth-btn").textContent = isRegMode ? "Registrar" : "Entrar";
   this.textContent = isRegMode ? "Já tem conta? Iniciar sessão" : "Não tem conta? Criar uma agora";
 });
 
@@ -301,7 +306,7 @@ document.getElementById("auth-btn").addEventListener("click", function(){
 
   if (isRegMode) {
     auth.createUserWithEmailAndPassword(email, pass).catch(function(error){
-      msgEl.textContent = "Erro ao registar: " + error.message;
+      msgEl.textContent = "Erro ao registrar: " + error.message;
     });
   } else {
     auth.signInWithEmailAndPassword(email, pass).catch(function(error){
@@ -314,7 +319,29 @@ document.getElementById("logout-btn").addEventListener("click", function(){
   auth.signOut();
 });
 
-// Funções básicas de renderização do app mantidas idênticas
+function onList(on) { var r = [], i; for (i = 1; i < on.length; i++) if (on[i]) r.push(i); return r; }
+function billPlan(b, ym, dias, tmd) {
+  var pq = ym.split("-"), Y = +pq[0], M = +pq[1], N = new Date(Y, M, 0).getDate(), fdw = new Date(Y, M-1, 1).getDay(),
+      cu = (b.dm || {})[ym], custom = !!cu, sel = [], on = [], live = [], per = [], q, wkc = {}, tw = 0, cnt = 0, wl = {}, nk;
+  if (cu) cu.forEach(function(d){ if (d >= 1 && d <= N) on[d] = true; });
+  else {
+    sel = b.t === "s" ? ((b.wd && b.wd.length) ? b.wd : dias) : (b.wd || [1,2,3,4,5]);
+    for (q = 1; q <= N; q++) if (sel.indexOf(new Date(Y, M-1, q).getDay()) >= 0) on[q] = true;
+  }
+  for (q = 1; q <= N; q++) if (on[q]) { nk = Math.floor((q - 1 + fdw) / 7); wkc[nk] = (wkc[nk] || 0) + 1; }
+  for (q = 1; q <= N; q++) {
+    if (!on[q]) continue;
+    nk = Math.floor((q - 1 + fdw) / 7);
+    if (b.t === "s") per[q] = custom ? b.a / wkc[nk] : b.a / (sel.length || 1);
+    else per[q] = b.a;
+    if (b.t === "s" && tmd && q < tmd) continue;
+    live[q] = true; cnt++; tw += per[q]; wl[nk] = 1;
+  }
+  return { on: on, live: live, per: per, sel: sel, custom: custom, cnt: cnt, tw: tw, wl: Object.keys(wl).length };
+}
+function selNames(sel) {
+  return [1,2,3,4,5,6,0].filter(function(i){ return sel.indexOf(i) >= 0; }).map(function(i){ return WN[i]; }).join(", ");
+}
 function wdOn(d) {
   var p = S.ym.split("-"), pat = ic("dias").indexOf(new Date(+p[0], +p[1]-1, d).getDay()) >= 0;
   if (ic("tipoRenda") !== "diaria") return pat;
@@ -374,15 +401,17 @@ function calc() {
   var X = XS(),
       L = S.bills.filter(function(b){ return act(b, S.ym); }).map(function(b){ return eff(b, S.ym); }),
       ex = X.reduce(function(s, x){ return s + x.a; }, 0),
-      wk = dias.length || 1, tot = 0, ud = 0;
-  var dc = [], hasDC = false;
-  for (d = 1; d <= N; d++) dc[d] = 0;
+      wk = dias.length || 1, tot = 0, ud = 0, wc = [];
+  var dc = [];
+  for (d = 1; d <= N; d++) { dc[d] = 0; wc[d] = 0; }
+  var tnw = new Date(), tmd = (tnw.getFullYear() == Y && tnw.getMonth() + 1 == M) ? tnw.getDate() : 0;
   L.forEach(function(b){
-    if (b.t == "dd") {
-      var wl = b.wd || (b.wd = [1,2,3,4,5]), cn = 0, q;
-      for (q = 1; q <= N; q++) if (wl.indexOf(new Date(Y, M-1, q).getDay()) >= 0) { dc[q] += b.a; cn++; hasDC = true; }
-      b.cnt = cn; b.tt = b.a * cn; tot += b.tt;
-    } else if (b.t == "s") { tot += b.a * wP / wk; ud += b.a / wk; }
+    if (b.t == "dd" || b.t == "s") {
+      var pl = billPlan(b, S.ym, dias, tmd), q;
+      b.on = pl.on; b.live = pl.live; b.per = pl.per; b.sel = pl.sel; b.custom = pl.custom; b.cnt = pl.cnt; b.wl = pl.wl;
+      if (b.t == "dd") { for (q = 1; q <= N; q++) if (pl.live[q]) dc[q] += b.a; b.tt = pl.tw; tot += b.tt; }
+      else { for (q = 1; q <= N; q++) if (pl.live[q]) wc[q] += pl.per[q]; b.tw = pl.tw; tot += b.tw; ud += pl.tw; }
+    }
     else tot += b.a;
   });
 
@@ -418,7 +447,7 @@ function calc() {
     var mn = bal, u;
     for (u = d0; u <= dEnd; u++) {
       exD[u].forEach(function(x){ bal += x.a; });
-      if (u > d0) { if (wdp[u]) bal -= ud; bal -= dc[u]; }
+      if (u > d0) { bal -= wc[u]; bal -= dc[u]; }
       bD[u].forEach(function(b){ bal -= b.a; });
       if (bal < mn) mn = bal;
     }
@@ -431,17 +460,17 @@ function calc() {
     for (d = 1; d <= N; d++) {
       var ev = [], dep = 0, udd = 0, wsh = 0, dS = 0, dN = [], A = !au || au(d);
       if (tipo === "diaria") {
-        var uw = wdp[d] ? ud : 0;
+        var uw = wc[d];
         if (wd[d] && !miss[d]) {
           var gg = (t0 && d < t0) ? gP : gF;
           dep = gg - uw; bal += dep; mim += dia - gg; udd = uw;
         } else if (uw) { bal -= uw; udd = uw; }
-      } else if (wdp[d]) {
-        bal -= ud; udd = ud;
+      } else if (wc[d] > 0) {
+        bal -= wc[d]; udd = wc[d];
       }
       if (dc[d] > 0) {
         bal -= dc[d]; udd += dc[d];
-        if (detail) L.forEach(function(b){ if (b.t == "dd" && b.wd.indexOf(new Date(Y, M-1, d).getDay()) >= 0) ev.push({ n: b.n, a: b.a }); });
+        if (detail) L.forEach(function(b){ if (b.t == "dd" && b.live[d]) ev.push({ n: b.n, a: b.a }); });
       }
       if (bal < 0) {
         wsh = -bal; top += -bal; dS += -bal;
@@ -507,7 +536,7 @@ function calc() {
       hasDen = Object.keys(S.au || {}).some(function(k){ return k.indexOf(S.ym + "d") === 0 && S.au[k] === "n"; }),
       fin = hasDen ? run(g, g0, true, function(dd){ return (S.au || {})[S.ym + "d" + dd] !== "n"; }) : fin0,
       cobrir = fin0.top, weeks = [];
-  if (ud > 0 || hasDC) {
+  if (ud > 0) {
     var fdw = new Date(Y, M-1, 1).getDay(), wm = {};
     fin0.days.forEach(function(x){
       if (x.ud > 0) {
@@ -518,7 +547,7 @@ function calc() {
     weeks = Object.keys(wm).map(function(k){ return wm[k]; }).sort(function(a, b){ return a.d - b.d; });
   }
   return { Y: Y, M: M, N: N, w: w, L: L, inc: principalRendaTotal + ex, tot: tot, g: g, g0: g0, gAdj: missN > 0 && g !== g0, missN: missN,
-           min: -cobrir, md: fin0.firstTop, wk: wk, ud: ud, cobrir: cobrir,
+           min: -cobrir, md: fin0.firstTop, wk: wk, ud: ud, cobrir: cobrir, wc: wc,
            wdp: wdp, wP: wP, rd: rd, lack: Math.max(0, -fin0.minM), lackD: fin0.minMd, endMim: fin.endMim, endMimAll: fin0.endMim, endPote: fin.endPote,
            days: fin.days, days0: fin0.days, bl: fin0.bl, seps: fin.seps, weeks: weeks,
            wnames: L.filter(function(b){ return b.t == "s" || b.t == "dd"; }).map(function(b){ return b.n; }).join(" + ") };
@@ -533,7 +562,7 @@ function RS(c) {
   else if (ic("tipoRenda") === "quinzena") iT = ic("valQuinzena") * 2;
   else if (ic("tipoRenda") === "mes") iT = ic("valMes");
 
-  LT.forEach(function(b){ tT += b.t == "dd" ? b.tt : (b.t == "s" ? b.a * c.wP / c.wk : b.a); });
+  LT.forEach(function(b){ tT += b.t == "dd" ? b.tt : (b.t == "s" ? b.tw : b.a); });
   XTT.forEach(function(x){ iT += x.a; });
 
   if (ic("tipoRenda") === "diaria") {
@@ -554,8 +583,15 @@ function RS(c) {
   }
   XTT.forEach(function(x){ if (S.paid[S.ym + x.id]) en += x.a; });
   LT.forEach(function(b){
-    if (b.t == "dd") { var q1; for (q1 = 1; q1 <= c.N; q1++) if (b.wd.indexOf(new Date(c.Y, c.M-1, q1).getDay()) >= 0 && S.paid[S.ym + b.id + "d" + q1]) pg += b.a; }
-    else if (b.t == "s") pg += nw * b.a / c.wk;
+    if (b.t == "dd") { var q1; for (q1 = 1; q1 <= c.N; q1++) if (b.live[q1] && S.paid[S.ym + b.id + "d" + q1]) pg += b.a; }
+    else if (b.t == "s") {
+      var q3;
+      for (q3 = 1; q3 <= c.N && q3 <= lim; q3++) {
+        if (!b.live[q3]) continue;
+        if (ic("tipoRenda") === "diaria" && wdOn(q3) && !S.paid[S.ym + "d" + q3]) continue;
+        pg += b.per[q3];
+      }
+    }
     else if (S.paid[S.ym + b.id]) pg += b.a;
   });
   return { pg: pg, en: en, nd: nd, tT: tT, iT: iT };
@@ -579,7 +615,7 @@ function vMes() {
     var hojeD = td.getDate();
     var avisosHoje = [];
     c.L.forEach(function(b){
-      if (b.t === "dd") { if (b.wd.indexOf(td.getDay()) >= 0) avisosHoje.push("Gasto de hoje: " + b.n + " (" + R(b.a) + ")"); }
+      if (b.t === "dd") { if (b.on[td.getDate()]) avisosHoje.push("Gasto de hoje: " + b.n + " (" + R(b.a) + ")"); }
       else if (b.t !== "s" && b.d === hojeD && !S.paid[S.ym + b.id]) avisosHoje.push("Conta a vencer hoje: " + b.n + " (" + R(b.a) + ")");
     });
     XS().forEach(function(x){
@@ -599,7 +635,6 @@ function vMes() {
 
   h += "<!--BAN-->";
   var rs = RS(c), pg = rs.pg, en = rs.en, nd = rs.nd, tT = rs.tT, iT = rs.iT, mc = mao(S.ym), fl = Math.max(0, tT - pg);
-  
   var sobraEmMaosLiquida = mc + en - pg;
 
   h += '<div class="cards">' +
@@ -722,7 +757,7 @@ function vMes() {
 
   var hj = isCurrentMonth && wdOn(td.getDate());
   if (hj && ic("tipoRenda") === "diaria" && ic("dia") > 0) {
-    h += '<div class="big">Hoje (' + WN[td.getDay()] + ' ' + td.getDate() + '): ao receber a diária, separe <b>' + R(c.g) + '</b> pro pote das contas' + (c.ud && c.wdp[td.getDate()] ? ' (já inclui ' + R(c.ud) + ' da conta semanal)' : '') + ' e fique com <b>' + R(ic("dia") - c.g) + '</b>.</div>';
+    h += '<div class="big">Hoje (' + WN[td.getDay()] + ' ' + td.getDate() + '): ao receber a diária, separe <b>' + R(c.g) + '</b> pro pote das contas' + (c.wc[td.getDate()] > 0 ? ' (já inclui ' + R(c.wc[td.getDate()]) + ' da conta semanal)' : '') + ' e fique com <b>' + R(ic("dia") - c.g) + '</b>.</div>';
   }
 
   var cy = carry(S.ym);
@@ -740,7 +775,7 @@ function vMes() {
       var dn2 = S.paid[S.ym + "d" + q];
       h += '<button class="row' + (dn2 ? " done" : "") + '" data-a="tog" data-i="d' + q + '">' +
            '<span class="chk">' + (dn2 ? "✓" : "") + '</span>' +
-           '<span class="grow"><b>' + WN[new Date(c.Y, c.M-1, q).getDay()] + ' ' + q + '</b><small>Pote ' + R(c.g - (c.wdp[q] ? c.ud : 0)) + (c.wdp[q] && c.ud ? ' · Conta semanal ' + R(c.ud) : '') + ' · Você ' + R(ic("dia") - c.g) + '</small></span>' +
+           '<span class="grow"><b>' + WN[new Date(c.Y, c.M-1, q).getDay()] + ' ' + q + '</b><small>Pote ' + R(c.g - c.wc[q]) + (c.wc[q] > 0 ? ' · Conta semanal ' + R(c.wc[q]) : '') + ' · Você ' + R(ic("dia") - c.g) + '</small></span>' +
            '</button>';
     }
   } else if (ic("tipoRenda") === "quinzena" && ic("valQuinzena") > 0) {
@@ -767,7 +802,7 @@ function vMes() {
     h += '<div class="note"><b>' + b.n + '</b> · ' + R(b.a) + ' por dia. Toque nos dias em que você gastou.</div>';
     for (var q2 = 1; q2 <= c.N; q2++) {
       var w2 = new Date(c.Y, c.M-1, q2).getDay();
-      if (b.wd.indexOf(w2) < 0) continue;
+      if (!b.on[q2]) continue;
       var k2 = b.id + "d" + q2, dn3 = S.paid[S.ym + k2];
       h += '<button class="row' + (dn3 ? " done" : "") + '" data-a="tog" data-i="' + k2 + '"><span class="chk">' + (dn3 ? "✓" : "") + '</span>' +
            '<span class="grow"><b>' + WN[w2] + ' ' + q2 + '</b><small>Gasto do dia</small></span><span class="amt">' + R(b.a) + '</span></button>';
@@ -781,7 +816,7 @@ function vMes() {
   var it = [];
   c.L.forEach(function(b){
     if (b.t == "dd") return;
-    if (b.t == "s") it.push({ d: 99, n: b.n, a: b.a * c.w / c.wk, s: R(b.a) + " por semana, separe todo dia", id: b.id, w: 1 });
+    if (b.t == "s") it.push({ d: 99, n: b.n, a: b.tw, s: R(b.a) + " por semana · " + (b.wl === 0 ? "nenhuma semana falta neste mês" : "faltam " + b.wl + (b.wl === 1 ? " semana" : " semanas")) + " · " + (b.custom ? "dias " + onList(b.on).join(", ") : (b.sel.length >= 7 ? "todo dia" : "nos dias: " + selNames(b.sel))), id: b.id, w: 1 });
     else it.push({ d: Math.min(b.d || 1, c.N), n: b.n, a: b.a, id: b.id });
   });
   XS().forEach(function(x){ it.push({ d: Math.min(x.d, c.N), n: x.n, a: x.a, id: x.id, x: 1 }); });
@@ -814,13 +849,37 @@ function vContas() {
          (b.t=="m" ? '<div><label>Dia do mês</label>' + inp("b", b.id, "d", b.d, "number") + '</div>' : '') +
          '<div><label>Termina (opcional)</label>' + inp("b", b.id, "f", b.f || "", "month") + '</div>' +
          '</div>' +
-         (b.t == "dd" ? '<label style="display:block;margin-top:10px">Dias da semana em que você gasta</label><div class="wds">' +
-           [1,2,3,4,5,6,0].map(function(i){ return '<button class="' + ((b.wd || [1,2,3,4,5]).indexOf(i) >= 0 ? "on" : "") + '" data-a="bwd" data-i="' + b.id + '" data-w="' + i + '">' + WN[i] + '</button>'; }).join("") + '</div>' : '') +
+         (b.t == "s" || b.t == "dd" ? billDaysUI(b) : '') +
          '<div class="note" style="margin:6px 0 0">Conta desde ' + mNome(b.i) + '.</div>' +
          '<button class="del" data-a="delb" data-i="' + b.id + '">Remover a partir de ' + mNome(S.ym) + '</button>' +
          '</div>';
   });
   return h + '<button class="add" data-a="addb">+ Nova conta em ' + mNome(S.ym) + '</button>';
+}
+
+function billDaysUI(b) {
+  var pq = S.ym.split("-"), Yb = +pq[0], Mb = +pq[1], tn = new Date(), tmd = (tn.getFullYear() == Yb && tn.getMonth() + 1 == Mb) ? tn.getDate() : 0,
+      pl = billPlan(b, S.ym, ic("dias"), tmd), N = new Date(Yb, Mb, 0).getDate(), fdw = new Date(Yb, Mb - 1, 1).getDay(),
+      isS = b.t === "s", nn = pl.sel.length || 1, q, o = '';
+  o += '<label style="display:block;margin-top:10px">' + (isS ? "Dias da semana previstos" : "Dias da semana em que você gasta") + '</label><div class="wds">' +
+       [1,2,3,4,5,6,0].map(function(i){ return '<button class="' + (!pl.custom && pl.sel.indexOf(i) >= 0 ? "on" : "") + '" data-a="bwd" data-i="' + b.id + '" data-w="' + i + '">' + WN[i] + '</button>'; }).join("") + '</div>';
+  o += '<label style="display:block;margin-top:12px">Ou marque os dias exatos de ' + mNome(S.ym) + '</label><div class="mini">';
+  WN.forEach(function(w){ o += '<span class="mh">' + w + '</span>'; });
+  for (q = 0; q < fdw; q++) o += '<button class="bl" disabled></button>';
+  for (q = 1; q <= N; q++) o += '<button class="' + (pl.on[q] ? "on" : "") + (isS && tmd && q < tmd ? " pass" : "") + '" data-a="bdt" data-i="' + b.id + '" data-w="' + q + '">' + q + '</button>';
+  o += '</div>';
+  if (isS) {
+    o += '<div class="note" style="margin:6px 0 0">' + (pl.custom ? 'Dias escolhidos só pra este mês: o valor da semana (' + R(b.a) + ') é dividido entre os dias marcados de cada semana.'
+         : R(b.a) + ' por semana ÷ ' + nn + (nn === 1 ? ' dia' : ' dias') + ' = <b>' + R(b.a / nn) + '</b> em cada dia marcado. Por padrão uso os seus dias de trabalho.') + '</div>';
+    o += '<div class="note" style="margin:4px 0 0">' + (tmd
+         ? (pl.wl === 0 ? 'Neste mês <b>não falta nenhuma semana</b>: nada a separar. Dias que já passaram ficam de fora.'
+                        : 'Faltam <b>' + pl.wl + (pl.wl === 1 ? ' semana' : ' semanas') + '</b> neste mês (' + pl.cnt + (pl.cnt === 1 ? ' dia' : ' dias') + '), total <b>' + R(pl.tw) + '</b>. Dias que já passaram ficam de fora (esmaecidos).')
+         : 'Neste mês: <b>' + pl.wl + (pl.wl === 1 ? ' semana' : ' semanas') + '</b>, total <b>' + R(pl.tw) + '</b>.') + '</div>';
+  } else {
+    o += '<div class="note" style="margin:6px 0 0">' + R(b.a) + ' por dia × ' + pl.cnt + (pl.cnt === 1 ? ' dia' : ' dias') + ' = <b>' + R(pl.tw) + '</b> no mês.' + (pl.custom ? ' Dias escolhidos só pra este mês.' : '') + '</div>';
+  }
+  if (pl.custom) o += '<button class="add" data-a="bdtclr" data-i="' + b.id + '" style="margin-top:8px">Voltar aos dias da semana</button>';
+  return o;
 }
 
 function wkState(d) {
@@ -1115,11 +1174,27 @@ document.addEventListener("click", function(e){
   else if (a == "au") { S.au = S.au || {}; var ak = S.ym + "d" + i; if (t.dataset.v) S.au[ak] = t.dataset.v; else delete S.au[ak]; }
   else if (a == "auall") { S.au = S.au || {}; (t.dataset.l || "").split(",").forEach(function(dd){ if (dd) S.au[S.ym + "d" + dd] = "y"; }); }
   else if (a == "carry") setC("carry", !ic("carry"));
+  else if (a == "bdt") {
+    var bo3 = S.bills.filter(function(z){ return z.id == i; })[0];
+    if (bo3) {
+      var e3 = eff(bo3, S.ym), lst = onList(billPlan(e3, S.ym, ic("dias"), 0).on), dn = +t.dataset.w, ix = lst.indexOf(dn);
+      if (ix < 0) lst.push(dn); else if (!(e3.t === "s" && lst.length === 1)) lst.splice(ix, 1);
+      lst.sort(function(x, y){ return x - y; });
+      bo3.dm = bo3.dm || {}; bo3.dm[S.ym] = lst;
+    }
+  }
+  else if (a == "bdtclr") {
+    var bo4 = S.bills.filter(function(z){ return z.id == i; })[0];
+    if (bo4 && bo4.dm) delete bo4.dm[S.ym];
+  }
   else if (a == "bwd") {
     var bo = S.bills.filter(function(z){ return z.id == i; })[0];
     if (bo) {
-      var cur2 = (eff(bo, S.ym).wd || [1,2,3,4,5]).slice(), w3 = +t.dataset.w, x3 = cur2.indexOf(w3);
-      if (x3 < 0) cur2.push(w3); else cur2.splice(x3, 1);
+      var bo2 = eff(bo, S.ym),
+          cur2 = (bo2.t === "s" ? ((bo2.wd && bo2.wd.length) ? bo2.wd : ic("dias")) : (bo2.wd || [1,2,3,4,5])).slice(),
+          w3 = +t.dataset.w, x3 = cur2.indexOf(w3);
+      if (x3 < 0) cur2.push(w3); else if (!(bo2.t === "s" && cur2.length === 1)) cur2.splice(x3, 1);
+      if (bo.dm) delete bo.dm[S.ym];
       bo.v = bo.v || {}; bo.v[S.ym] = bo.v[S.ym] || {}; bo.v[S.ym].wd = cur2;
     }
   }
@@ -1137,24 +1212,4 @@ document.addEventListener("click", function(e){
       alert("Este navegador não suporta notificações.");
     }
   }
-  else if (a == "addb") S.bills.push({ id: "b" + Date.now(), n: "Nova conta", a: 0, d: 1, t: "m", i: S.ym, f: "", v: {} });
-  else if (a == "addx") S.ex.push({ id: "x" + Date.now(), n: "Nova renda", a: 0, d: 1, i: S.ym, f: "", v: {} });
-  else if (a == "delb" || a == "delx") {
-    var key = a == "delb" ? "bills" : "ex", o = S[key].filter(function(z){ return z.id == i; })[0];
-    if (o) {
-      if (!o.i || o.i >= S.ym) S[key] = S[key].filter(function(z){ return z.id != i; });
-      else o.f = prevYM(S.ym);
-    }
-  }
-  save(); draw();
-});
-
-try {
-  if (window.Notification && Notification.permission === "granted" && LASTAV.length) {
-    var nk = "aviso-" + new Date().toDateString();
-    if (!localStorage.getItem(nk)) { new Notification("Planejamento Financeiro", { body: LASTAV.join("\n") }); localStorage.setItem(nk, "1"); }
-  }
-} catch(e){}
-</script>
-</body>
-</html>
+  else if (a == "addb") S.bills.push({ id: "b" + Date.now(), n: "Nova conta", a
