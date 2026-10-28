@@ -666,6 +666,29 @@ function vMes() {
   })();
   var nx = (c.bl || []).filter(function(q){ return !S.paid[S.ym + q.id] && (!isCurrentMonth || q.d >= td.getDate()); })[0];
   if (nx) ban += '<div class="note" style="margin-top:-4px">Próximo vencimento: <b>' + nx.n + '</b> · dia ' + nx.d + ' · ' + R(nx.a) + ' · o pote terá ' + R(nx.before) + (sepMap[nx.id] ? '<br>' + sepMap[nx.id] : '') + '</div>';
+  // quanto posso gastar hoje (só do que sobra livre pra você, depois de garantir as contas)
+  var spendCard = "";
+  if (isCurrentMonth) {
+    var tD = td.getDate(), DL = c.N - tD + 1, xt = c.days[tD - 1], gpT = (S.gp || {})[S.ym + "d" + tD] || 0,
+        diariaT = ic("tipoRenda") === "diaria", livre = diariaT ? Math.max(0, (+ic("dia") || 0) - c.g) : 0,
+        semRec = diariaT && wdOn(tD) && !S.paid[S.ym + "d" + tD] && c.rd !== tD,
+        cash = xt.mim - (semRec ? livre : 0),
+        pool = c.endMim + gpT, budget = Math.max(0, pool) / DL,
+        left = Math.max(0, Math.min(budget - gpT, cash)),
+        semSobra = pool < 0.005, corS = left > 0.005 ? "var(--ok)" : "var(--bad)", nt = "";
+    if (semSobra) nt = 'Depois de garantir as contas do mês, <b>não sobra nada livre</b>' + (pool < -0.005 ? ' (faltam ' + R(-pool) + ')' : '') + '. Hoje o melhor é não gastar do que é pra você.';
+    else {
+      nt = 'Contando tudo que ainda vai pagar até o fim do mês, sobram <b>' + R(pool) + '</b> livres pra você em ' + DL + (DL === 1 ? ' dia' : ' dias') + ': dá <b>' + R(budget) + '</b> por dia.';
+      if (gpT > 0.005) nt += '<br>Você já gastou <b>' + R(gpT) + '</b> hoje.';
+      if (cash < budget - gpT - 0.005) nt += '<br>Em mãos tem só <b>' + R(Math.max(0, cash)) + '</b> agora' + (semRec ? ': marque a diária de hoje como recebida que libera mais' : ', o resto chega nas próximas diárias') + '.';
+    }
+    var rmim = (S.real || {})[S.ym];
+    if (!semSobra && !(rmim && rmim.mim != null)) nt += '<br><small>⚠️ Esse valor supõe que você ainda não gastou do que é pra você neste mês, além do que registrou aqui. Se já gastou, diga quanto tem em "Acertar com a realidade" logo abaixo que eu corrijo.</small>';
+    spendCard = '<div class="card" style="border-color:' + corS + '"><b>💸 Quanto posso gastar hoje</b>' +
+      '<div style="font-size:32px;font-weight:800;margin:6px 0;color:' + corS + '">' + R(left) + '</div>' +
+      '<div class="note" style="margin:0 0 8px">' + nt + '</div>' +
+      '<label>Gastei hoje do que é pra mim (R$)</label>' + inp("g", tD, "g", gpT, "number") + '</div>';
+  }
   var rl2 = (S.real || {})[S.ym], snap = "";
   if (isCurrentMonth) {
     snap = '<div class="card fld"><b>🔄 Acertar com a realidade</b><div class="note" style="margin:4px 0 6px">Se o dinheiro que você tem agora é diferente do plano, diga quanto tem e eu refaço as contas daqui pra frente.</div>' +
@@ -810,7 +833,7 @@ function vMes() {
          '</button>';
   });
 
-  return h.replace("<!--BAN-->", ban + permH + snap) + '<p class="note">Toque numa conta pra marcar como paga. O mês seguinte começa limpo.</p>';
+  return h.replace("<!--BAN-->", ban + permH + spendCard + snap) + '<p class="note">Toque numa conta pra marcar como paga. O mês seguinte começa limpo.</p>';
 }
 
 function vContas() {
