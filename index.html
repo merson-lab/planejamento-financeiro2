@@ -184,7 +184,7 @@ try {
 } catch(e){}
 
 function fix() {
-  S.rp = S.rp || {}; S.au = S.au || {}; S.dw = S.dw || {}; S.real = S.real || {}; S.paid = S.paid || {}; S.gp = S.gp || {}; S.ini = S.ini || {}; S.rv = S.rv || {};
+  S.rp = S.rp || {}; S.xc = S.xc || {}; S.au = S.au || {}; S.dw = S.dw || {}; S.real = S.real || {}; S.paid = S.paid || {}; S.gp = S.gp || {}; S.ini = S.ini || {}; S.rv = S.rv || {};
   if (!S.tipoRenda) S.tipoRenda = "diaria";
   if (S.dia === undefined) S.dia = 0;
   if (!S.dias) S.dias = [1,2,3,4,5];
@@ -329,7 +329,7 @@ function carry(ym) {
 }
 
 function XS() { return S.ex.filter(function(x){ return act(x, S.ym); }).map(function(x){ return eff(x, S.ym); }); }
-function XT() { return XS().filter(function(x){ return S.rp[S.ym] || !x.i || x.i == S.ym; }); }
+function XT() { return XS(); }
 function ini0() { return ic("carry") ? carry(S.ym).p : (+S.ini[S.ym] || 0); }
 function mim0() { return ic("carry") ? carry(S.ym).m : Math.max(0, mao(S.ym) - ini0()); }
 
@@ -504,7 +504,7 @@ function calc() {
 
 function RS(c) {
   var pg = 0, en = 0, nd = 0, q0,
-      LT = c.L.filter(function(b){ return S.rp[S.ym] || !b.i || b.i == S.ym; }),
+      LT = c.L,
       XTT = XT(), tT = 0, iT = 0;
 
   if (ic("tipoRenda") === "diaria") iT = ic("dia") * c.w;
@@ -586,7 +586,7 @@ function vMes() {
   h += "<!--BAN-->";
   var rs = RS(c), pg = rs.pg, en = rs.en, nd = rs.nd, tT = rs.tT, iT = rs.iT, mc = mao(S.ym), fl = Math.max(0, tT - pg);
   
-  var sobraEmMaosLiquida = mc + en - pg;
+  var mcv = S.xc[S.ym] ? 0 : mc, sobraEmMaosLiquida = mcv + en - pg;
 
   h += '<div class="cards">' +
        '<div class="cd"><small>Entra no mês</small><b>' + R(iT) + '</b></div>' +
@@ -598,12 +598,12 @@ function vMes() {
        '</div>' +
        '<div class="bar"><i style="width:' + (tT > 0 ? Math.min(100, Math.round(pg / tT * 100)) : 0) + '%"></i></div>' +
        '<div class="note" style="margin-top:0">' + (tT > 0 ? Math.min(100, Math.round(pg / tT * 100)) : 0) + '% das contas do mês já pagas</div>' +
-       '<div class="note">Previsão de sobra no fim do mês: <b>' + R(mc + iT - tT) + '</b>' +
+       '<div class="note">Previsão de sobra no fim do mês: <b>' + R(mcv + iT - tT) + '</b>' +
        (ic("tipoRenda") === "diaria" ? ' · ' + nd + ' de ' + c.w + ' diárias marcadas' : '') +
-       (Math.abs(mc) > 0.005 ? '<br>Inclui ' + R(mc) + ' que sobrou dos meses anteriores.' : '') + '</div>';
+       (Math.abs(mc) > 0.005 ? (S.xc[S.ym] ? '<br>Não inclui os ' + R(mc) + ' que sobraram dos meses anteriores.' : '<br>Inclui ' + R(mc) + ' que sobrou dos meses anteriores.') : '') + '</div>';
 
   h += '<button class="add" data-a="rep" style="margin:0 0 10px">' +
-       (S.rp[S.ym] ? "✓ Resumo de cima inclui contas e rendas dos meses anteriores (toque pra desligar)" : "Incluir contas e rendas dos meses anteriores no resumo de cima (desligado)") +
+       (S.xc[S.ym] ? "Incluir o que sobrou dos meses anteriores na sobra em mãos (desligado)" : "✓ Sobra em mãos inclui o que sobrou dos meses anteriores (toque pra desligar)") +
        '</button>';
 
   if (ic("tipoRenda") === "diaria") {
@@ -847,15 +847,25 @@ function vContas() {
          '<div class="g2">' +
          '<div><label>' + (b.t=="dd" ? "Valor por dia (R$)" : b.t=="s" ? "Valor por semana (R$)" : "Valor (R$)") + '</label>' + inp("b", b.id, "a", b.a, "number") + '</div>' +
          '<div><label>Tipo</label><select data-s="b" data-i="' + b.id + '" data-f="t"><option value="m"' + (b.t=="m"?" selected":"") + '>Mensal</option><option value="s"' + (b.t=="s"?" selected":"") + '>Semanal</option><option value="dd"' + (b.t=="dd"?" selected":"") + '>Diária (dias da semana)</option></select></div>' +
-         (b.t=="m" ? '<div><label>Dia do mês</label>' + inp("b", b.id, "d", b.d, "number") + '</div>' : '') +
-         '<div><label>Termina (opcional)</label>' + inp("b", b.id, "f", b.f || "", "month") + '</div>' +
+                  '<div><label>Termina (opcional)</label>' + inp("b", b.id, "f", b.f || "", "month") + '</div>' +
          '</div>' +
-         (b.t == "s" || b.t == "dd" ? billDaysUI(b) : '') +
+         (b.t == "s" || b.t == "dd" ? billDaysUI(b) : billMonthUI(b)) +
          '<div class="note" style="margin:6px 0 0">Conta desde ' + mNome(b.i) + '.</div>' +
          '<button class="del" data-a="delb" data-i="' + b.id + '">Remover a partir de ' + mNome(S.ym) + '</button>' +
          '</div>';
   });
   return h + '<button class="add" data-a="addb">+ Nova conta em ' + mNome(S.ym) + '</button>';
+}
+
+function billMonthUI(b) {
+  var pq = S.ym.split("-"), Yb = +pq[0], Mb = +pq[1], N = new Date(Yb, Mb, 0).getDate(), fdw = new Date(Yb, Mb - 1, 1).getDay(),
+      dsel = Math.min(Math.max(1, +b.d || 1), N), q, o = '';
+  o += '<label style="display:block;margin-top:12px">Dia do vencimento em ' + mNome(S.ym) + '</label><div class="mini">';
+  WN.forEach(function(w){ o += '<span class="mh">' + w + '</span>'; });
+  for (q = 0; q < fdw; q++) o += '<button class="bl" disabled></button>';
+  for (q = 1; q <= N; q++) o += '<button class="' + (q === dsel ? "on" : "") + '" data-a="bmd" data-i="' + b.id + '" data-w="' + q + '">' + q + '</button>';
+  o += '</div><div class="note" style="margin:6px 0 0">Vence todo dia <b>' + dsel + '</b>. Toque num dia do calendário pra mudar (vale deste mês em diante).</div>';
+  return o;
 }
 
 function billDaysUI(b) {
@@ -1270,7 +1280,7 @@ document.addEventListener("click", function(e){
   else if (a == "selday") selDay = +i;
   else if (a == "tog") { var k = S.ym + i; S.paid[k] = !S.paid[k]; }
   else if (a == "wd") { var cur = ic("dias").slice(), x = cur.indexOf(+i); if (x < 0) cur.push(+i); else cur.splice(x, 1); setC("dias", cur); }
-  else if (a == "rep") S.rp[S.ym] = !S.rp[S.ym];
+  else if (a == "rep") S.xc[S.ym] = !S.xc[S.ym];
   else if (a == "rclr") { delete (S.real || {})[S.ym]; }
   else if (a == "bkgen") { var bk = document.getElementById("bk"); if (bk) { bk.value = JSON.stringify(S); bk.focus(); bk.select(); try { document.execCommand("copy"); } catch(e2){} } return; }
   else if (a == "bkrst") { var bt2 = document.getElementById("bk"); bkStage(bt2 ? bt2.value : ""); }
@@ -1299,6 +1309,10 @@ document.addEventListener("click", function(e){
   else if (a == "au") { S.au = S.au || {}; var ak = S.ym + "d" + i; if (t.dataset.v) S.au[ak] = t.dataset.v; else delete S.au[ak]; }
   else if (a == "auall") { S.au = S.au || {}; (t.dataset.l || "").split(",").forEach(function(dd){ if (dd) S.au[S.ym + "d" + dd] = "y"; }); }
   else if (a == "carry") setC("carry", !ic("carry"));
+  else if (a == "bmd") {
+    var bo = S.bills.filter(function(z){ return z.id == i; })[0];
+    if (bo) { bo.v = bo.v || {}; bo.v[S.ym] = bo.v[S.ym] || {}; bo.v[S.ym].d = +t.dataset.w; }
+  }
   else if (a == "bdt") {
     var bo3 = S.bills.filter(function(z){ return z.id == i; })[0];
     if (bo3) {
