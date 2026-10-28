@@ -12,11 +12,6 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Planejamento Financeiro Completo</title>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
-<!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-
 <style>
 :root {
   --bg: #eef2f5;
@@ -43,6 +38,10 @@
     --bad: #ff8a80;
     color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --bg: #0f161c; --card: #18222b; --ink: #e8eef3; --mut: #93a4b3; --line: #2b3946;
+  --c: #46c2c0; --v: #8aa2ff; --ok: #5fcf86; --bad: #ff8a80; color-scheme: dark;
 }
 .sync { font-size: 12px; color: var(--mut); text-align: center; margin: -6px 0 10px; min-height: 16px; }
 * { box-sizing: border-box; }
@@ -103,10 +102,23 @@ label { font-size: 13px; color: var(--mut); font-weight: 700; }
 .rt small, .rt b { display: block; }
 .row input { width: 96px; padding: 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
 
-/* Calendário e Mini-Calendários */
+/* Estilos do Calendário Real */
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 12px; }
 .cal-head { text-align: center; font-size: 12px; font-weight: 700; color: var(--mut); padding: 4px 0; }
-.cal-day { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 4px; min-height: 58px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; text-align: left; position: relative; width: 100%; }
+.cal-day {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 4px;
+  min-height: 58px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  text-align: left;
+  position: relative;
+  width: 100%;
+}
 .cal-day.empty { background: transparent; border: none; cursor: default; }
 .cal-day.hj { border: 2px solid var(--v); }
 .cal-day.sel { border: 2px solid var(--c); background: rgba(14,124,123,0.08); }
@@ -117,13 +129,13 @@ label { font-size: 13px; color: var(--mut); font-weight: 700; }
 .cal-badge.out { background: rgba(179,38,30,0.18); color: var(--bad); }
 .cal-badge.wk { background: rgba(58,91,217,0.18); color: var(--v); }
 
+/* Permissão pra tirar da sobra */
 .mini { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 6px; }
 .mini .mh { text-align: center; font-size: 11px; color: var(--mut); font-weight: 700; }
 .mini button { padding: 10px 0; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-weight: 700; font-size: 14px; cursor: pointer; }
 .mini button.on { background: var(--c); border-color: var(--c); color: var(--bg); }
 .mini button.pass { opacity: 0.4; }
 .mini .bl { visibility: hidden; }
-
 .bar { height: 8px; background: var(--line); border-radius: 6px; overflow: hidden; margin: 0 0 6px; }
 .bar i { display: block; height: 100%; background: var(--ok); border-radius: 6px; }
 textarea { font: inherit; }
@@ -135,63 +147,35 @@ textarea { font: inherit; }
 </style>
 </head>
 <body>
-
-<!-- TELA DE LOGIN / CRIAR CONTA -->
-<div id="auth-screen" style="display:none; max-width: 400px; margin: 40px auto; padding: 20px; background: var(--card); border: 1px solid var(--line); border-radius: 12px;">
-  <h2 id="auth-title" style="text-align:center; margin-top:0;">Entrar na sua Conta</h2>
-  <div class="card fld" style="border:none; padding:0; background:transparent;">
-    <label>E-mail</label>
-    <input type="email" id="auth-email" placeholder="seu@email.com" style="margin-bottom:10px;">
-    <label>Senha</label>
-    <input type="password" id="auth-pass" placeholder="••••••••" style="margin-bottom:14px;">
-    <button class="add" id="auth-btn" style="background:var(--c); color:var(--bg);">Entrar</button>
-    <button class="del" id="auth-switch" style="border:none; background:transparent; color:var(--v); margin-top:10px; cursor:pointer; width:100%;">Não tem conta? Criar uma agora</button>
-    <div id="auth-msg" class="note" style="color:var(--bad); text-align:center; margin-top:8px;"></div>
-  </div>
-</div>
-
-<!-- APLICAÇÃO PRINCIPAL -->
-<div id="app-screen" style="display:none;">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-    <h1>Planejamento Completo</h1>
-    <button id="logout-btn" style="font-size:12px; padding:6px 10px; border-radius:6px; border:1px solid var(--line); background:var(--card); cursor:pointer;">Sair da Conta</button>
-  </div>
-  <div class="sync" id="sync"></div>
-  <div style="margin-bottom: 10px;"><button class="add" data-a="notif" id="btn-notif" style="margin-top:0;background:var(--card);color:var(--ink);">🔔 Avisar vencimentos quando eu abrir o app</button></div>
-  <div class="tabs" id="tabs"></div>
-  <div id="view"></div>
-</div>
+<h1>Planejamento Completo</h1>
+<div class="sync" id="sync"></div>
+<div style="margin-bottom: 10px;"><button class="add" data-a="notif" id="btn-notif" style="margin-top:0;background:var(--card);color:var(--ink);">🔔 Avisar vencimentos quando eu abrir o app</button></div>
+<div class="tabs" id="tabs"></div>
+<div id="view"></div>
 
 <script>
-// ==========================================
-// CONFIGURAÇÃO DO FIREBASE
-// ==========================================
-var firebaseConfig = {
-  apiKey: "AIzaSyC5i5n9bMtr--hj_mw0km1RGiGWLXwPTQU",
-  authDomain: "finaceiro-f268b.firebaseapp.com",
-  projectId: "finaceiro-f268b",
-  storageBucket: "finaceiro-f268b.firebasestorage.app",
-  messagingSenderId: "425198285823",
-  appId: "1:425198285823:web:34162e9c00afc1be5a6dca"
-};
-
-firebase.initializeApp(firebaseConfig);
-var auth = firebase.auth();
-var db = firebase.firestore();
-var currentUserUid = null;
-
-// ==========================================
-// LÓGICA DO APLICATIVO
-// ==========================================
 var LASTAV = [], KEY = "plano-v2",
     MS = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"],
     WN = ["dom","seg","ter","qua","qui","sex","sáb"],
     tab = 1, selDay = 0,
     currentYM = new Date().getFullYear() + "-" + ("0" + (new Date().getMonth() + 1)).slice(-2),
     S = {
-      ym: currentYM, tipoRenda: "diaria", dia: 0, dias: [1,2,3,4,5],
-      valQuinzena: 0, diaQ1: 5, diaQ2: 20, valMes: 0, diaMes: 5,
-      ini: {}, paid: {}, gp: {}, rp: {}, carry: false, ex: [], bills: []
+      ym: currentYM,
+      tipoRenda: "diaria",
+      dia: 0,
+      dias: [1,2,3,4,5],
+      valQuinzena: 0,
+      diaQ1: 5,
+      diaQ2: 20,
+      valMes: 0,
+      diaMes: 5,
+      ini: {},
+      paid: {},
+      gp: {},
+      rp: {},
+      carry: false,
+      ex: [],
+      bills: []
     };
 
 try {
@@ -221,105 +205,64 @@ function fix() {
   }
 }
 fix();
+saveLocal();
 
-var CLOUD = { saving: false, again: false, timer: null };
+// ---------- salvamento ----------
+// Cópia no aparelho (localStorage) + cópia na sua conta (db do Artifact), que não some quando você fecha o app.
+var CLOUD = { ref: null, saving: false, again: false, timer: null };
+var KEY_PREV = "plano-v2-prev", BKMSG = "", PEND = null,
+    STORE_OK = (function(){ try { localStorage.setItem("__t", "1"); localStorage.removeItem("__t"); return true; } catch(e){ return false; } })();
+function localMsg() { return STORE_OK ? "💾 Salvo automaticamente neste aparelho" : "⚠️ Este navegador não guarda dados. Baixe um backup depois de cada uso."; }
 function setSync(t) { var el = document.getElementById("sync"); if (el) el.textContent = t; }
 function hora() { return new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); }
 function saveLocal() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
-
 function save() {
   S.ts = Date.now();
   saveLocal();
-  if (currentUserUid) {
-    clearTimeout(CLOUD.timer);
-    CLOUD.timer = setTimeout(cloudPush, 800);
-    setSync("⏳ Salvando na nuvem…");
-  }
+  if (CLOUD.ref) { clearTimeout(CLOUD.timer); CLOUD.timer = setTimeout(cloudPush, 600); setSync("⏳ Salvando…"); }
 }
-
 function cloudPush() {
-  if (!currentUserUid) return;
+  if (!CLOUD.ref) return;
   if (CLOUD.saving) { CLOUD.again = true; return; }
   CLOUD.saving = true;
   var j = JSON.stringify(S), ts = S.ts || Date.now();
-  db.collection("users").doc(currentUserUid).set({ json: j, ts: ts }).then(function(){
+  CLOUD.ref.set({ json: j, ts: ts, v: 1 }).then(function(){
     CLOUD.saving = false;
-    if (CLOUD.again) { CLOUD.again = false; cloudPush(); } else setSync("☁️ Sincronizado com a nuvem às " + hora());
-  }).catch(function(err){
-    CLOUD.saving = false;
-    setSync("⚠️ Erro ao salvar na nuvem: " + err.message);
-  });
-}
-
-function cloudPull(uid) {
-  setSync("⏳ Carregando dados da nuvem…");
-  db.collection("users").doc(uid).get().then(function(doc){
-    if (doc.exists) {
-      var data = doc.data();
-      try {
-        var rem = JSON.parse(data.json);
-        if (rem && (rem.ts || 0) >= (S.ts || 0)) {
-          S = rem; fix(); START = S.start; CC = {}; MC = {}; saveLocal(); draw();
-          setSync("☁️ Dados carregados da sua conta");
-          return;
-        }
-      } catch(e){}
-    }
-    cloudPush();
+    if (CLOUD.again) { CLOUD.again = false; cloudPush(); } else setSync("☁️ Salvo na sua conta às " + hora());
   }).catch(function(){
-    setSync("⚠️ Modo offline: usando dados locais");
+    CLOUD.saving = false;
+    setSync("⚠️ Não consegui salvar na nuvem. Fica salvo só neste aparelho.");
   });
 }
+function temDados(o) { return (o.ts || 0) > 0 || (o.bills || []).length > 0 || (o.ex || []).length > 0 || (+o.dia || 0) > 0; }
+async function cloudInit() {
+  try {
+    if (!window.claude || !window.claude.use) { setSync(localMsg()); return; }
+    setSync("⏳ Conectando à sua conta…");
+    var cl = await window.claude.use("db"), us = await window.claude.use("user");
+    if (!cl || !us) { setSync("💾 Salvo só neste aparelho (nuvem indisponível)"); return; }
+    var uid = await us.id();
+    if (!uid) { setSync("💾 Salvo só neste aparelho (entre na sua conta pra salvar na nuvem)"); return; }
+    var ref = cl.doc("data/users/" + uid + "/plano"), snap = await ref.get(), rem = null;
+    if (snap.exists) {
+      var dd = snap.data() || {};
+      try { rem = JSON.parse(dd.json); if (rem) rem.ts = dd.ts || rem.ts || 0; } catch(e1){ rem = null; }
+    }
+    CLOUD.ref = ref;
+    if (rem && rem.bills && rem.ym && (rem.ts || 0) > (S.ts || 0)) {
+      S = rem; fix(); START = S.start; CC = {}; MC = {}; saveLocal(); draw();
+      setSync("☁️ Dados carregados da sua conta");
+    } else if (temDados(S) && (!rem || (S.ts || 0) > (rem.ts || 0))) {
+      if (!S.ts) S.ts = Date.now();
+      saveLocal(); cloudPush();
+    } else setSync("☁️ Conectado à sua conta");
+  } catch(e) { setSync("💾 Salvo só neste aparelho (nuvem indisponível)"); }
+}
 
-auth.onAuthStateChanged(function(user) {
-  if (user) {
-    currentUserUid = user.uid;
-    document.getElementById("auth-screen").style.display = "none";
-    document.getElementById("app-screen").style.display = "block";
-    cloudPull(user.uid);
-    draw();
-  } else {
-    currentUserUid = null;
-    document.getElementById("auth-screen").style.display = "block";
-    document.getElementById("app-screen").style.display = "none";
-  }
-});
-
-var isRegMode = false;
-document.getElementById("auth-switch").addEventListener("click", function(){
-  isRegMode = !isRegMode;
-  document.getElementById("auth-title").textContent = isRegMode ? "Criar Nova Conta" : "Entrar na sua Conta";
-  document.getElementById("auth-btn").textContent = isRegMode ? "Registrar" : "Entrar";
-  this.textContent = isRegMode ? "Já tem conta? Iniciar sessão" : "Não tem conta? Criar uma agora";
-});
-
-document.getElementById("auth-btn").addEventListener("click", function(){
-  var email = document.getElementById("auth-email").value.trim();
-  var pass = document.getElementById("auth-pass").value;
-  var msgEl = document.getElementById("auth-msg");
-  msgEl.textContent = "";
-
-  if (!email || !pass) {
-    msgEl.textContent = "Preencha o e-mail e a senha.";
-    return;
-  }
-
-  if (isRegMode) {
-    auth.createUserWithEmailAndPassword(email, pass).catch(function(error){
-      msgEl.textContent = "Erro ao registrar: " + error.message;
-    });
-  } else {
-    auth.signInWithEmailAndPassword(email, pass).catch(function(error){
-      msgEl.textContent = "Erro ao entrar: " + error.message;
-    });
-  }
-});
-
-document.getElementById("logout-btn").addEventListener("click", function(){
-  auth.signOut();
-});
-
+// dia de diária de verdade: segue os dias da semana, mas respeita o que você marcou no calendário da aba Renda
+// S.dw[dia] = "n" (faltei) ou "y" (diária extra fora dos dias de sempre)
 function onList(on) { var r = [], i; for (i = 1; i < on.length; i++) if (on[i]) r.push(i); return r; }
+// quais dias do mês uma conta semanal/diária cobra, quanto em cada dia e o que ainda falta (semanas que já passaram ficam de fora)
 function billPlan(b, ym, dias, tmd) {
   var pq = ym.split("-"), Y = +pq[0], M = +pq[1], N = new Date(Y, M, 0).getDate(), fdw = new Date(Y, M-1, 1).getDay(),
       cu = (b.dm || {})[ym], custom = !!cu, sel = [], on = [], live = [], per = [], q, wkc = {}, tw = 0, cnt = 0, wl = {}, nk;
@@ -334,7 +277,7 @@ function billPlan(b, ym, dias, tmd) {
     nk = Math.floor((q - 1 + fdw) / 7);
     if (b.t === "s") per[q] = custom ? b.a / wkc[nk] : b.a / (sel.length || 1);
     else per[q] = b.a;
-    if (b.t === "s" && tmd && q < tmd) continue;
+    if (b.t === "s" && tmd && q < tmd) continue; // semana que já passou: ignora
     live[q] = true; cnt++; tw += per[q]; wl[nk] = 1;
   }
   return { on: on, live: live, per: per, sel: sel, custom: custom, cnt: cnt, tw: tw, wl: Object.keys(wl).length };
@@ -401,16 +344,16 @@ function calc() {
   var X = XS(),
       L = S.bills.filter(function(b){ return act(b, S.ym); }).map(function(b){ return eff(b, S.ym); }),
       ex = X.reduce(function(s, x){ return s + x.a; }, 0),
-      wk = dias.length || 1, tot = 0, ud = 0, wc = [];
-  var dc = [];
+      wk = dias.length || 1, tot = 0, ud = 0, wc = [], hasWC = false;
+  var dc = [], hasDC = false;
   for (d = 1; d <= N; d++) { dc[d] = 0; wc[d] = 0; }
   var tnw = new Date(), tmd = (tnw.getFullYear() == Y && tnw.getMonth() + 1 == M) ? tnw.getDate() : 0;
   L.forEach(function(b){
     if (b.t == "dd" || b.t == "s") {
       var pl = billPlan(b, S.ym, dias, tmd), q;
       b.on = pl.on; b.live = pl.live; b.per = pl.per; b.sel = pl.sel; b.custom = pl.custom; b.cnt = pl.cnt; b.wl = pl.wl;
-      if (b.t == "dd") { for (q = 1; q <= N; q++) if (pl.live[q]) dc[q] += b.a; b.tt = pl.tw; tot += b.tt; }
-      else { for (q = 1; q <= N; q++) if (pl.live[q]) wc[q] += pl.per[q]; b.tw = pl.tw; tot += b.tw; ud += pl.tw; }
+      if (b.t == "dd") { for (q = 1; q <= N; q++) if (pl.live[q]) { dc[q] += b.a; hasDC = true; } b.tt = pl.tw; tot += b.tt; }
+      else { for (q = 1; q <= N; q++) if (pl.live[q]) { wc[q] += pl.per[q]; hasWC = true; } b.tw = pl.tw; tot += b.tw; ud += pl.tw; }
     }
     else tot += b.a;
   });
@@ -420,12 +363,14 @@ function calc() {
   else if (tipo === "quinzena") principalRendaTotal = ic("valQuinzena") * 2;
   else if (tipo === "mes") principalRendaTotal = ic("valMes");
 
+  // entradas "de uma vez" (quinzena / mês)
   var lumps = [];
   if (tipo === "quinzena") {
     lumps.push({ d: Math.min(ic("diaQ1"), N), amt: ic("valQuinzena"), id: "q1" });
     lumps.push({ d: Math.min(ic("diaQ2"), N), amt: ic("valQuinzena"), id: "q2" });
   } else if (tipo === "mes") lumps.push({ d: Math.min(ic("diaMes"), N), amt: ic("valMes"), id: "mes1" });
 
+  // adaptação: no mês de hoje, dias que já passaram e você não marcou como recebidos não entram no plano
   var td = new Date(), t0 = (td.getFullYear() == Y && td.getMonth() + 1 == M) ? td.getDate() : 0,
       miss = [], missN = 0;
   if (t0) {
@@ -443,6 +388,7 @@ function calc() {
   var rl = (S.real || {})[S.ym], rd = rl ? Math.min(Math.max(1, +rl.d || 1), N) : 0;
   var bal0 = ini0(), mim0v = mim0();
 
+  // dinheiro que sai do pote de d0 até dEnd (sem nenhuma separação nova), pra saber o pior ponto
   function pior(d0, dEnd, bal) {
     var mn = bal, u;
     for (u = d0; u <= dEnd; u++) {
@@ -454,13 +400,14 @@ function calc() {
     return mn;
   }
 
+  // roda o mês dia a dia. gF = separação por diária de hoje em diante, gP = dos dias que já passaram
   function run(gF, gP, detail, au) {
     var bal = bal0, mim = mim0v, top = 0, days = detail ? [] : null, bl = detail ? [] : null, seps = detail ? [] : null,
         minM = mim, minMd = 0, firstTop = 0, d, li = 0;
     for (d = 1; d <= N; d++) {
       var ev = [], dep = 0, udd = 0, wsh = 0, dS = 0, dN = [], A = !au || au(d);
       if (tipo === "diaria") {
-        var uw = wc[d];
+        var uw = wc[d]; // a conta semanal vence mesmo se você faltar
         if (wd[d] && !miss[d]) {
           var gg = (t0 && d < t0) ? gP : gF;
           dep = gg - uw; bal += dep; mim += dia - gg; udd = uw;
@@ -500,7 +447,7 @@ function calc() {
         }
       });
       mim -= (S.gp || {})[S.ym + "d" + d] || 0;
-      if (rd && d === rd) {
+      if (rd && d === rd) { // o que você disse que tem de verdade vira o ponto de partida daqui pra frente
         if (rl.pote !== null && rl.pote !== undefined) bal = +rl.pote || 0;
         if (rl.mim !== null && rl.mim !== undefined) mim = +rl.mim || 0;
         top = 0; firstTop = 0; minM = mim; minMd = 0; dS = 0; dN = [];
@@ -512,6 +459,7 @@ function calc() {
     return { top: top, minM: minM, minMd: minMd, firstTop: firstTop, days: days, bl: bl, seps: seps, endMim: mim, endPote: bal };
   }
 
+  // menor separação por diária que mantém o pote sem ficar no vermelho (+20% de folga)
   function melhor(gP) {
     var hi = Math.ceil(dia), lo = 0;
     function g(i) { return Math.min(i, dia); }
@@ -532,11 +480,12 @@ function calc() {
     miss = saveMiss; t0 = saveT0;
     return r;
   }
+  // fin0 = plano com tudo autorizado (pra saber o que falta); fin = o que vale de fato, respeitando o que você negou
   var fin0 = run(g, g0, true, null),
       hasDen = Object.keys(S.au || {}).some(function(k){ return k.indexOf(S.ym + "d") === 0 && S.au[k] === "n"; }),
       fin = hasDen ? run(g, g0, true, function(dd){ return (S.au || {})[S.ym + "d" + dd] !== "n"; }) : fin0,
       cobrir = fin0.top, weeks = [];
-  if (ud > 0) {
+  if (hasWC || hasDC) {
     var fdw = new Date(Y, M-1, 1).getDay(), wm = {};
     fin0.days.forEach(function(x){
       if (x.ud > 0) {
@@ -547,8 +496,8 @@ function calc() {
     weeks = Object.keys(wm).map(function(k){ return wm[k]; }).sort(function(a, b){ return a.d - b.d; });
   }
   return { Y: Y, M: M, N: N, w: w, L: L, inc: principalRendaTotal + ex, tot: tot, g: g, g0: g0, gAdj: missN > 0 && g !== g0, missN: missN,
-           min: -cobrir, md: fin0.firstTop, wk: wk, ud: ud, cobrir: cobrir, wc: wc,
-           wdp: wdp, wP: wP, rd: rd, lack: Math.max(0, -fin0.minM), lackD: fin0.minMd, endMim: fin.endMim, endMimAll: fin0.endMim, endPote: fin.endPote,
+           min: -cobrir, md: fin0.firstTop, wk: wk, ud: ud, cobrir: cobrir,
+           wdp: wdp, wP: wP, wc: wc, rd: rd, p0: bal0, lack: Math.max(0, -fin0.minM), lackD: fin0.minMd, endMim: fin.endMim, endMimAll: fin0.endMim, endPote: fin.endPote,
            days: fin.days, days0: fin0.days, bl: fin0.bl, seps: fin.seps, weeks: weeks,
            wnames: L.filter(function(b){ return b.t == "s" || b.t == "dd"; }).map(function(b){ return b.n; }).join(" + ") };
 }
@@ -607,8 +556,9 @@ function mao(ym) {
 
 function vMes() {
   var c = calc(),
-      h = '<div class="nav"><button data-a="pm">‹</button><b>' + MS[c.M-1] + ' de ' + c.Y + '</b><button data-a="nm">›</button></div>';
+      h = '<div class="nav"><button data-a="pm">‹</button><b>' + MS[c.M-1] + ' de ' + c.Y + '</b><button data-a="nm">›</button></div>' + bkBanner();
   
+  // Verificação de alertas para o dia de hoje
   var td = new Date();
   var isCurrentMonth = td.getFullYear() == c.Y && (td.getMonth() + 1) == c.M;
   if (isCurrentMonth) {
@@ -635,6 +585,7 @@ function vMes() {
 
   h += "<!--BAN-->";
   var rs = RS(c), pg = rs.pg, en = rs.en, nd = rs.nd, tT = rs.tT, iT = rs.iT, mc = mao(S.ym), fl = Math.max(0, tT - pg);
+  
   var sobraEmMaosLiquida = mc + en - pg;
 
   h += '<div class="cards">' +
@@ -665,12 +616,14 @@ function vMes() {
     h += '<div class="big">Salário Mensal: Entra <b>' + R(ic("valMes")) + '</b> no dia ' + ic("diaMes") + '.</div>';
   }
 
+  // quando a renda cai de uma vez (quinzena/mês): quanto separar em cada recebimento
   if (c.seps && c.seps.length) {
     c.seps.forEach(function(x){
       h += '<div class="note">Dia ' + x.d + ': ao receber ' + R(x.amt) + ', separe <b>' + R(x.sep) + '</b> pro pote e fique com <b>' + R(x.keep) + '</b>.</div>';
     });
   }
 
+  // plano do mês (vai pro topo da tela). Só dá alarme pro que ainda vem pela frente
   var ban = "", td1 = isCurrentMonth ? td.getDate() : 1,
       fut = (c.days0 || []).filter(function(x){ return x.sh > 0.005 && x.d >= td1; }),
       pas = (c.days0 || []).filter(function(x){ return x.sh > 0.005 && x.d < td1; }),
@@ -689,8 +642,53 @@ function vMes() {
   } else {
     ban += '<div class="okb">✅ <b>O pote cobre tudo.</b> Todos os vencimentos do mês estão garantidos só com o que você separa, sem tirar nada da sobra. No fim do mês ficam <b>' + R(c.endMim) + '</b> livres pra você' + (c.endPote > 0.005 ? ' e ' + R(c.endPote) + ' de folga no pote pro mês que vem' : '') + '.</div>';
   }
+  // quanto separar por dia pra cada conta chegar no vencimento com o dinheiro
+  var sepMap = {};
+  (function(){
+    var t = td.getDate(), cur = isCurrentMonth, dv = +ic("dia") || 0, diaria = ic("tipoRenda") === "diaria",
+        recebeuHoje = cur && (S.paid[S.ym + "d" + t] || c.rd === t),
+        baseDay = cur ? (recebeuHoje ? t : t - 1) : 0, startDay = baseDay + 1,
+        avail = baseDay >= 1 ? c.days[baseDay - 1].pote : c.p0;
+    (c.bl || []).filter(function(b){ return !S.paid[S.ym + b.id] && (!cur || b.d >= t); })
+      .sort(function(a, b){ return a.d - b.d; })
+      .forEach(function(b){
+        var res = Math.min(Math.max(avail, 0), b.a), rem = b.a - res, n = 0, q, per;
+        avail -= res;
+        for (q = startDay; q <= b.d; q++) if (!diaria || wdOn(q)) n++;
+        per = n > 0 ? Math.ceil(rem / n * 100) / 100 : 0;
+        var un = diaria ? (n === 1 ? "diária" : "diárias") : (n === 1 ? "dia" : "dias"), txt;
+        if (rem < 0.005) txt = "💰 Não precisa separar mais: já tem " + R(res) + " no pote pra essa conta.";
+        else if (n === 0) txt = "💰 Não tem " + (diaria ? "diária" : "dia") + " até o vencimento: os " + R(rem) + " precisam estar no pote antes.";
+        else txt = "💰 Separe " + R(per) + " por " + (diaria ? "diária" : "dia") + " (" + n + " " + un + " até o vencimento" + (res > 0.005 ? ", já tem " + R(res) + " no pote" : "") + ")." +
+                   (diaria && dv > 0 && per > dv + 0.005 ? " ⚠️ Passa do valor da sua diária (" + R(dv) + ")." : "");
+        sepMap[b.id] = txt;
+      });
+  })();
   var nx = (c.bl || []).filter(function(q){ return !S.paid[S.ym + q.id] && (!isCurrentMonth || q.d >= td.getDate()); })[0];
-  if (nx) ban += '<div class="note" style="margin-top:-4px">Próximo vencimento: <b>' + nx.n + '</b> · dia ' + nx.d + ' · ' + R(nx.a) + ' · o pote terá ' + R(nx.before) + '</div>';
+  if (nx) ban += '<div class="note" style="margin-top:-4px">Próximo vencimento: <b>' + nx.n + '</b> · dia ' + nx.d + ' · ' + R(nx.a) + ' · o pote terá ' + R(nx.before) + (sepMap[nx.id] ? '<br>' + sepMap[nx.id] : '') + '</div>';
+  // quanto posso gastar hoje (só do que sobra livre pra você, depois de garantir as contas)
+  var spendCard = "";
+  if (isCurrentMonth) {
+    var tD = td.getDate(), DL = c.N - tD + 1, xt = c.days[tD - 1], gpT = (S.gp || {})[S.ym + "d" + tD] || 0,
+        diariaT = ic("tipoRenda") === "diaria", livre = diariaT ? Math.max(0, (+ic("dia") || 0) - c.g) : 0,
+        semRec = diariaT && wdOn(tD) && !S.paid[S.ym + "d" + tD] && c.rd !== tD,
+        cash = xt.mim - (semRec ? livre : 0),
+        pool = c.endMim + gpT, budget = Math.max(0, pool) / DL,
+        left = Math.max(0, Math.min(budget - gpT, cash)),
+        semSobra = pool < 0.005, corS = left > 0.005 ? "var(--ok)" : "var(--bad)", nt = "";
+    if (semSobra) nt = 'Depois de garantir as contas do mês, <b>não sobra nada livre</b>' + (pool < -0.005 ? ' (faltam ' + R(-pool) + ')' : '') + '. Hoje o melhor é não gastar do que é pra você.';
+    else {
+      nt = 'Contando tudo que ainda vai pagar até o fim do mês, sobram <b>' + R(pool) + '</b> livres pra você em ' + DL + (DL === 1 ? ' dia' : ' dias') + ': dá <b>' + R(budget) + '</b> por dia.';
+      if (gpT > 0.005) nt += '<br>Você já gastou <b>' + R(gpT) + '</b> hoje.';
+      if (cash < budget - gpT - 0.005) nt += '<br>Em mãos tem só <b>' + R(Math.max(0, cash)) + '</b> agora' + (semRec ? ': marque a diária de hoje como recebida que libera mais' : ', o resto chega nas próximas diárias') + '.';
+    }
+    var rmim = (S.real || {})[S.ym];
+    if (!semSobra && !(rmim && rmim.mim != null)) nt += '<br><small>⚠️ Esse valor supõe que você ainda não gastou do que é pra você neste mês, além do que registrou aqui. Se já gastou, diga quanto tem em "Acertar com a realidade" logo abaixo que eu corrijo.</small>';
+    spendCard = '<div class="card" style="border-color:' + corS + '"><b>💸 Quanto posso gastar hoje</b>' +
+      '<div style="font-size:32px;font-weight:800;margin:6px 0;color:' + corS + '">' + R(left) + '</div>' +
+      '<div class="note" style="margin:0 0 8px">' + nt + '</div>' +
+      '<label>Gastei hoje do que é pra mim (R$)</label>' + inp("g", tD, "g", gpT, "number") + '</div>';
+  }
   var rl2 = (S.real || {})[S.ym], snap = "";
   if (isCurrentMonth) {
     snap = '<div class="card fld"><b>🔄 Acertar com a realidade</b><div class="note" style="margin:4px 0 6px">Se o dinheiro que você tem agora é diferente do plano, diga quanto tem e eu refaço as contas daqui pra frente.</div>' +
@@ -699,6 +697,7 @@ function vMes() {
            (rl2 ? '<div class="note">Plano refeito a partir do dia ' + rl2.d + ' com o que você informou.</div><button class="del" data-a="rclr" style="margin-top:0">Voltar ao plano original</button>' : '') + '</div>';
   }
 
+  // pedido de permissão pra tirar da sobra
   var permH = "", pend = [], decided = [], pendTot = 0;
   (c.days || []).forEach(function(x){
     if (x.sh < 0.005) return;
@@ -724,7 +723,7 @@ function vMes() {
 
   var venc = [];
   (c.bl || []).forEach(function(b){
-    venc.push({ d: b.d, o: 0, st: (S.au || {})[S.ym + "d" + b.d], t: b.n, a: b.a, done: S.paid[S.ym + b.id], short: b.short, no: b.short >= 0.005 && b.mimAfter < -0.005,
+    venc.push({ d: b.d, o: 0, id: b.id, st: (S.au || {})[S.ym + "d" + b.d], t: b.n, a: b.a, done: S.paid[S.ym + b.id], short: b.short, no: b.short >= 0.005 && b.mimAfter < -0.005,
       ok: "Dá: o pote terá " + R(b.before) + ".",
       amb: "Tire " + R(b.short) + " da sobra em mãos: o pote terá só " + R(b.before) + ".",
       red: "Não dá: o pote terá " + R(b.before) + ", faltam " + R(b.short) + " e a sobra em mãos não chega." });
@@ -737,7 +736,7 @@ function vMes() {
   });
   venc.sort(function(a, b){ return a.d - b.d || a.o - b.o; });
   if (venc.length) {
-    h += '<div class="note"><b>Vencimentos: o que dá e o que não dá</b><br>Contas do mês e contas semanais (uma linha por semana). Mostra quanto o pote vai ter na hora de pagar.</div>';
+    h += '<div class="note"><b>Vencimentos: o que dá e o que não dá</b><br>Contas do mês e contas semanais (uma linha por semana). Mostra quanto o pote vai ter na hora de pagar e quanto separar por dia pra cada conta.</div>';
     venc.forEach(function(b){
       var ok = b.short < 0.005, no = b.no,
           cor = ok ? "var(--ok)" : (no ? "var(--bad)" : "#d97706"),
@@ -751,7 +750,9 @@ function vMes() {
         msg = b.done ? "✓ Já paga" : "Já venceu: marque como paga abaixo quando pagar.";
       }
       h += '<div class="row' + (b.done ? " done" : "") + '" style="cursor:default;align-items:flex-start;border-left:4px solid ' + cor + '"><span class="grow"><b>' + WN[new Date(c.Y, c.M-1, b.d).getDay()] + ' ' + b.d + ' · ' + b.t + '</b>' + ate +
-           '<small style="color:' + cor + '">' + msg + '</small></span><span class="amt">' + R(b.a) + '</span></div>';
+           '<small style="color:' + cor + '">' + msg + '</small>' +
+           (b.o === 0 && !b.done && sepMap[b.id] && !(isCurrentMonth && b.d < td.getDate()) ? '<small style="color:var(--ink);font-weight:600;margin-top:3px">' + sepMap[b.id] + '</small>' : '') +
+           '</span><span class="amt">' + R(b.a) + '</span></div>';
     });
   }
 
@@ -832,7 +833,7 @@ function vMes() {
          '</button>';
   });
 
-  return h.replace("<!--BAN-->", ban + permH + snap) + '<p class="note">Toque numa conta pra marcar como paga. O mês seguinte começa limpo.</p>';
+  return h.replace("<!--BAN-->", ban + permH + spendCard + snap) + '<p class="note">Toque numa conta pra marcar como paga. O mês seguinte começa limpo.</p>';
 }
 
 function vContas() {
@@ -918,10 +919,124 @@ function vDiarias() {
   return h + '</div>';
 }
 
+function pad2(n) { return ("0" + n).slice(-2); }
+function bkPayload() { return JSON.stringify({ app: "planejamento-financeiro", schema: 2, exportedAt: new Date().toISOString(), data: S }, null, 1); }
+function bkName() { var d = new Date(); return "planejamento-backup-" + d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) + ".json"; }
+function canShareFile() {
+  try { var f = new File(["{}"], "a.json", { type: "application/json" }); return !!(navigator.share && navigator.canShare && navigator.canShare({ files: [f] })); } catch(e) { return false; }
+}
+var CANSHARE = canShareFile();
+function bkMark() { S.lastBk = Date.now(); save(); }
+
+async function bkSave() {
+  var txt = bkPayload(), name = bkName(), feito = false;
+  try {
+    if (window.claude && window.claude.use) {
+      var dl = await window.claude.use("downloads");
+      if (dl) { await dl.save({ filename: name, data: txt }); feito = true; }
+    }
+  } catch(e) {
+    if (e && e.code === "declined") { BKMSG = "Você cancelou o salvamento."; draw(); return; }
+  }
+  if (!feito) {
+    try {
+      var blob = new Blob([txt], { type: "application/json" }), url = URL.createObjectURL(blob), an = document.createElement("a");
+      an.href = url; an.download = name; document.body.appendChild(an); an.click();
+      setTimeout(function(){ URL.revokeObjectURL(url); an.remove(); }, 3000);
+      feito = true;
+    } catch(e2) {}
+  }
+  if (feito) { BKMSG = "✅ Backup gerado (" + name + "). Se o arquivo não apareceu, use \"Copiar ou colar como texto\" abaixo."; bkMark(); }
+  else BKMSG = "Não consegui gerar o arquivo neste aparelho. Use \"Copiar ou colar como texto\" abaixo.";
+  draw();
+}
+async function bkShare() {
+  try {
+    var f = new File([bkPayload()], bkName(), { type: "application/json" });
+    await navigator.share({ files: [f], title: "Backup do Planejamento Financeiro" });
+    BKMSG = "✅ Backup enviado."; bkMark();
+  } catch(e) { BKMSG = (e && e.name === "AbortError") ? "Envio cancelado." : "Não consegui enviar. Use \"Salvar em arquivo\"."; }
+  draw();
+}
+
+// lê o texto de um backup e confere se faz sentido, sem mexer nos dados atuais
+function bkParse(text) {
+  var o;
+  try { o = JSON.parse(text); } catch(e) { return { err: "Esse arquivo não parece ser um backup (não consegui ler)." }; }
+  var d = (o && o.app === "planejamento-financeiro" && o.data) ? o.data : o;
+  if (!d || typeof d !== "object" || !Array.isArray(d.bills) || typeof d.ym !== "string" || !/^\d{4}-\d{2}$/.test(d.ym))
+    return { err: "Esse arquivo não é um backup deste app." };
+  var meses = {};
+  Object.keys(d.paid || {}).forEach(function(k){ meses[k.slice(0, 7)] = 1; });
+  return { S: d, info: { contas: d.bills.length, rendas: (d.ex || []).length, meses: Object.keys(meses).length, quando: (o && o.exportedAt) || "" } };
+}
+function bkStage(text) {
+  var r = bkParse(text);
+  if (r.err) { PEND = null; BKMSG = r.err; } else { PEND = r; BKMSG = ""; }
+}
+function bkApply() {
+  if (!PEND) return;
+  var antes = JSON.stringify(S);
+  try {
+    S = PEND.S; fix(); START = S.start; CC = {}; MC = {}; calc();
+  } catch(e) {
+    S = JSON.parse(antes); fix(); START = S.start; CC = {}; MC = {};
+    PEND = null; BKMSG = "Esse backup tem algo errado e não foi carregado. Seus dados continuam como estavam."; return;
+  }
+  try { localStorage.setItem(KEY_PREV, antes); } catch(e2) {}
+  PEND = null; BKMSG = "✅ Backup carregado. Se não era isso, use \"Desfazer\".";
+}
+function bkUndo() {
+  var p = null;
+  try { p = JSON.parse(localStorage.getItem(KEY_PREV) || "null"); } catch(e) {}
+  if (!p || !p.bills) { BKMSG = "Não tem nada pra desfazer."; return; }
+  S = p; fix(); START = S.start; CC = {}; MC = {};
+  try { localStorage.removeItem(KEY_PREV); } catch(e2) {}
+  BKMSG = "↩️ Voltei pros dados de antes do backup.";
+}
+
 function vBackup() {
-  return '<div class="card" style="margin-top:14px"><b>💾 Backup dos seus dados</b><div class="note" style="margin:4px 0 6px">Seus dados ficam sincronizados na sua conta. Você também pode gerar o backup em texto por segurança.</div>' +
-         '<textarea id="bk" rows="3" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:12px" placeholder="O backup aparece aqui. Pra restaurar, cole aqui o texto salvo."></textarea>' +
-         '<div class="g2"><button class="add" data-a="bkgen" style="margin-top:0">Gerar backup</button><button class="add" data-a="bkrst" style="margin-top:0">Restaurar</button></div></div>';
+  var ult = S.lastBk ? new Date(S.lastBk).toLocaleDateString("pt-BR") : null, temPrev = false;
+  try { temPrev = !!localStorage.getItem(KEY_PREV); } catch(e) {}
+  var h = '<div class="card" style="margin-top:14px"><b>💾 Backup dos seus dados</b>' +
+    '<div class="note" style="margin:4px 0 8px">Tudo é salvo sozinho neste aparelho. O backup protege se você trocar de celular, reinstalar o app ou limpar os dados dele. ' +
+    (ult ? 'Último backup: <b>' + ult + '</b>.' : 'Você ainda não fez backup.') + '</div>' +
+    '<div class="g2"><button class="add" data-a="bkfile" style="margin-top:0">⬇️ Salvar em arquivo</button>' +
+    '<label class="add" for="bkfile" style="margin-top:0;display:block;text-align:center;cursor:pointer">⬆️ Carregar arquivo</label></div>' +
+    '<input type="file" id="bkfile" accept=".json,.txt,application/json,text/plain" style="display:none">' +
+    (CANSHARE ? '<button class="add" data-a="bkshare">📤 Enviar backup (Drive, WhatsApp…)</button>' : '') +
+    (BKMSG ? '<div class="note" style="margin:8px 0 0"><b>' + BKMSG + '</b></div>' : '');
+  if (PEND) {
+    var q = PEND.info;
+    h += '<div class="alert-box" style="margin-top:10px">Carregar este backup?<br><span style="font-weight:400">Contas: ' + q.contas + ' · Rendas extras: ' + q.rendas + ' · Meses com marcações: ' + q.meses +
+         (q.quando ? '<br>Feito em ' + new Date(q.quando).toLocaleDateString("pt-BR") : '') +
+         '<br>Isso <b>substitui</b> os dados que estão agora neste aparelho (dá pra desfazer logo depois).</span>' +
+         '<div class="g2"><button class="add" data-a="bkok">Sim, carregar</button><button class="del" data-a="bkno">Cancelar</button></div></div>';
+  }
+  if (temPrev) h += '<button class="add" data-a="bkundo">↩️ Desfazer a última restauração</button>';
+  h += '<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:700">Copiar ou colar como texto</summary>' +
+       '<textarea id="bk" rows="3" style="width:100%;padding:9px;margin-top:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:12px" placeholder="O backup aparece aqui. Pra restaurar, cole aqui o texto salvo."></textarea>' +
+       '<div class="g2"><button class="add" data-a="bkgen" style="margin-top:0">Gerar e copiar</button><button class="add" data-a="bkrst" style="margin-top:0">Restaurar</button></div></details></div>';
+  return h;
+}
+
+// avisos no topo do Mês: boas-vindas (app vazio) e lembrete de backup (quando só existe neste aparelho)
+function semDados() {
+  return !S.bills.length && !S.ex.length && !(+S.dia) && !(+S.valQuinzena) && !(+S.valMes) && !Object.keys(S.rv || {}).length;
+}
+function bkBanner() {
+  if (semDados()) {
+    return '<div class="card"><b>👋 Bem-vindo!</b><div class="note" style="margin:6px 0">Pra montar o seu plano, preencha duas coisas:<br>1. Na aba <b>Renda</b>: quanto você ganha e em quais dias.<br>2. Na aba <b>Contas</b>: suas contas, com valor e dia de vencimento.<br>Depois é só acompanhar aqui no Mês.</div>' +
+           '<div class="g2"><button class="add" data-a="tab" data-i="0" style="margin-top:0">Ir pra Renda</button><button class="add" data-a="tab" data-i="4" style="margin-top:0">Ir pra Contas</button></div></div>';
+  }
+  var dias = S.lastBk ? Math.floor((Date.now() - S.lastBk) / 864e5) : null,
+      soneca = S.bkSnooze && (Date.now() - S.bkSnooze) < 3 * 864e5;
+  if (!CLOUD.ref && !soneca && (dias === null || dias >= 7)) {
+    return '<div class="alert-box">💾 ' + (dias === null ? 'Você ainda não fez backup.' : 'Faz ' + dias + ' dias que você não faz backup.') +
+           '<br><span style="font-weight:400">Seus dados ficam neste aparelho. Um arquivo de backup protege se você trocar de celular ou limpar o app.</span>' +
+           '<div class="g2"><button class="add" data-a="bkfile" style="margin-top:0">Fazer backup agora</button><button class="add" data-a="bksoneca" style="margin-top:0">Agora não</button></div></div>';
+  }
+  return "";
 }
 
 function vRenda() {
@@ -1088,6 +1203,7 @@ function draw() {
   }).join("");
   document.getElementById("view").innerHTML = [vRenda, vMes, vCalendario, vSaldo, vContas][tab]();
   
+  // Atualiza o estado do botão de notificações
   var btnNotif = document.getElementById("btn-notif");
   if (btnNotif) {
     if (!window.Notification) btnNotif.style.display = "none";
@@ -1100,7 +1216,15 @@ function draw() {
 }
 
 document.addEventListener("change", function(e){
-  var t = e.target, sc = t.dataset.s; if (!sc) return;
+  var t = e.target;
+  if (t.id === "bkfile") {
+    var fl = t.files && t.files[0]; if (!fl) return;
+    var rd = new FileReader();
+    rd.onload = function(){ bkStage(String(rd.result || "")); draw(); };
+    rd.onerror = function(){ BKMSG = "Não consegui ler esse arquivo."; draw(); };
+    rd.readAsText(fl); t.value = ""; return;
+  }
+  var sc = t.dataset.s; if (!sc) return;
   var f = t.dataset.f, v = t.value;
   if (sc == "g") { S.gp = S.gp || {}; S.gp[S.ym + "d" + t.dataset.i] = parseFloat(v) || 0; }
   else if (sc == "r") {
@@ -1149,12 +1273,13 @@ document.addEventListener("click", function(e){
   else if (a == "rep") S.rp[S.ym] = !S.rp[S.ym];
   else if (a == "rclr") { delete (S.real || {})[S.ym]; }
   else if (a == "bkgen") { var bk = document.getElementById("bk"); if (bk) { bk.value = JSON.stringify(S); bk.focus(); bk.select(); try { document.execCommand("copy"); } catch(e2){} } return; }
-  else if (a == "bkrst") {
-    var bt2 = document.getElementById("bk"), nS = null;
-    try { nS = JSON.parse(bt2 ? bt2.value : ""); } catch(e3){}
-    if (!nS || !nS.bills || !nS.ym) { alert("Cole primeiro o texto do backup na caixa."); return; }
-    S = nS; fix(); START = S.start; save();
-  }
+  else if (a == "bkrst") { var bt2 = document.getElementById("bk"); bkStage(bt2 ? bt2.value : ""); }
+  else if (a == "bkfile") { bkSave(); return; }
+  else if (a == "bkshare") { bkShare(); return; }
+  else if (a == "bkok") bkApply();
+  else if (a == "bkno") { PEND = null; BKMSG = ""; }
+  else if (a == "bkundo") bkUndo();
+  else if (a == "bksoneca") S.bkSnooze = Date.now();
   else if (a == "wkd") {
     S.dw = S.dw || {};
     var wk = S.ym + "d" + i, ws = wkState(+i), wp = S.ym.split("-"), wpat = ic("dias").indexOf(new Date(+wp[0], +wp[1]-1, +i).getDay()) >= 0;
@@ -1212,4 +1337,29 @@ document.addEventListener("click", function(e){
       alert("Este navegador não suporta notificações.");
     }
   }
-  else if (a == "addb") S.bills.push({ id: "b" + Date.now(), n: "Nova conta", a
+  else if (a == "addb") S.bills.push({ id: "b" + Date.now(), n: "Nova conta", a: 0, d: 1, t: "m", i: S.ym, f: "", v: {} });
+  else if (a == "addx") S.ex.push({ id: "x" + Date.now(), n: "Nova renda", a: 0, d: 1, i: S.ym, f: "", v: {} });
+  else if (a == "delb" || a == "delx") {
+    var key = a == "delb" ? "bills" : "ex", o = S[key].filter(function(z){ return z.id == i; })[0];
+    if (o) {
+      if (!o.i || o.i >= S.ym) S[key] = S[key].filter(function(z){ return z.id != i; });
+      else o.f = prevYM(S.ym);
+    }
+  }
+  save(); draw();
+});
+
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(e) {}
+draw();
+setSync(localMsg());
+cloudInit();
+try { if ("serviceWorker" in navigator && /^https?:/.test(location.protocol)) navigator.serviceWorker.register("./sw.js"); } catch(e) {}
+try {
+  if (window.Notification && Notification.permission === "granted" && LASTAV.length) {
+    var nk = "aviso-" + new Date().toDateString();
+    if (!localStorage.getItem(nk)) { new Notification("Planejamento Financeiro", { body: LASTAV.join("\n") }); localStorage.setItem(nk, "1"); }
+  }
+} catch(e){}
+</script>
+</body>
+</html>
