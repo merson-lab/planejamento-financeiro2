@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#07110f">
+<meta name="theme-color" content="#08172d">
 <meta name="color-scheme" content="light dark">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -284,6 +284,144 @@ button:active { transform:scale(.985); }
  .cd small { font-size:11px; }
 }
 
+
+
+/* ===== NAVY BLUE RESPONSIVE DESIGN SYSTEM ===== */
+:root {
+  --bg:#071426;
+  --card:#0e2039;
+  --ink:#edf5ff;
+  --mut:#9aacc4;
+  --line:#243b5c;
+  --c:#55b8ff;
+  --v:#8d9cff;
+  --ok:#43d6a0;
+  --bad:#ff788b;
+  color-scheme:dark;
+  font-synthesis:none;
+  text-rendering:optimizeLegibility;
+}
+html,body { width:100%; min-width:0; min-height:100%; overflow-x:hidden; }
+html { background:#071426; }
+body {
+  width:100%; max-width:none; min-height:100svh;
+  padding:clamp(12px,2.4vw,34px) clamp(10px,3vw,42px) calc(28px + env(safe-area-inset-bottom,0px));
+  color:var(--ink);
+  background:
+    radial-gradient(ellipse at 8% -8%,rgba(48,126,220,.24),transparent 38%),
+    radial-gradient(ellipse at 100% 18%,rgba(83,105,210,.13),transparent 32%),
+    linear-gradient(160deg,#08172d 0%,#071426 55%,#0a1a31 100%);
+  font-family:Inter,"Segoe UI",system-ui,sans-serif;
+}
+#app-screen { width:min(100%,1480px); min-width:0; margin:0 auto; }
+#view, .app-topbar, .tabs, .card, .chart-panel { min-width:0; }
+.app-topbar { border-bottom:1px solid rgba(137,174,224,.18); }
+.brand-mark {
+  color:#fff; background:linear-gradient(145deg,#67caff,#526ff0);
+  box-shadow:0 9px 30px rgba(62,139,239,.28);
+}
+.welcome-copy .eyebrow { color:#70c9ff; }
+.user-avatar { background:linear-gradient(145deg,#193b63,#263c76); border-color:#426a9d; color:#d8edff; }
+.logout-button,#btn-notif { background:#102541!important; border-color:#29476c!important; color:#c6dcf6!important; }
+.tabs { background:rgba(11,29,53,.88); border-color:rgba(116,158,211,.2); }
+.tabs button { color:#a9bdd8; }
+.tabs button.on { background:linear-gradient(135deg,#55b8ff,#5278f4); color:#06172d; box-shadow:0 6px 20px rgba(67,139,244,.24); }
+.nav { color:#f0f6ff; }
+.nav button { background:#122a49; border-color:#2b4b73; color:#d8eaff; }
+.cd,.card,.big,.chart-panel {
+  background:linear-gradient(145deg,rgba(18,42,72,.98),rgba(12,30,53,.98));
+  border:1px solid #294568; border-radius:18px;
+  box-shadow:0 12px 30px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.025);
+}
+.cd small,.note,.grow small,.rt small,.chart-subtitle { color:#9eb2cd; }
+.cd b { color:#f1f7ff; }
+.big { border-color:rgba(85,184,255,.45); background:linear-gradient(120deg,rgba(64,143,235,.18),rgba(13,32,57,.96)); }
+.row { background:#102541; border-color:#294568; }
+.row.hj { border-color:var(--v); }
+.add,.del { background:#122b4b; border-color:#315477; color:#e0efff; }
+.add:hover { border-color:#55b8ff; background:#17385e; }
+.del { color:#ff9aa8; border-color:#824657; }
+.card input,.card select,.fld input,.fld select,.row input,textarea,
+.au-field input { background:#091a30!important; color:var(--ink)!important; border:1px solid #315174!important; }
+input:focus,select:focus,textarea:focus { outline:2px solid rgba(85,184,255,.35); border-color:#55b8ff!important; }
+.au-card { background:linear-gradient(145deg,#112b4b,#0b1d35); border-color:#2c4d74; }
+.au-field input { background:#091a30!important; }
+.au-main { background:linear-gradient(135deg,#55b8ff,#5278f4); color:#06172d; }
+.au-main:active { background:#429ce5; }
+.au-forgot button,.au-switch button { color:#70c9ff; }
+.au-google { background:#102541; border-color:#315174; color:#edf5ff; }
+.bar { background:#263e5e; }
+.bar i { background:linear-gradient(90deg,#4b8dff,#55caff); }
+.amt.in { color:#56dfad; }
+.okb { color:#58e0ad; border-color:#287d68; background:rgba(67,214,160,.09); }
+.warn { color:#ff9aa8; border-color:#824657; background:rgba(255,120,139,.08); }
+.alert-box { color:#ffd18a; border-color:#8a6a38; background:rgba(255,190,92,.08); }
+.cal-grid { width:100%; min-width:0; grid-template-columns:repeat(7,minmax(0,1fr)); gap:clamp(2px,.55vw,7px); }
+.cal-head { min-width:0; font-size:clamp(9px,1.1vw,12px); color:#a9bfdc; }
+.cal-day {
+  min-width:0; min-height:clamp(48px,6.3vw,88px); height:auto;
+  padding:clamp(3px,.65vw,8px); overflow:hidden;
+  background:linear-gradient(155deg,#142e4e,#102541); border-color:#29496d;
+  border-radius:clamp(6px,1vw,12px);
+}
+.cal-day.sel { background:rgba(65,151,242,.2); border-color:#55b8ff; }
+.cal-day.hj { border-color:#a0aaff; }
+.cal-num { font-size:clamp(10px,1.25vw,14px); }
+.cal-dots { min-width:0; overflow:hidden; }
+.cal-badge { max-width:100%; font-size:clamp(7px,.8vw,10px); padding:2px 3px; }
+.cal-badge.in { background:rgba(67,214,160,.16); color:#65e5b7; }
+.cal-badge.out { background:rgba(255,120,139,.15); color:#ff9aaa; }
+.cal-badge.wk { background:rgba(141,156,255,.16); color:#b8c2ff; }
+.mini button,.mk button,.mk .off,.wds button { background:#122b49; border-color:#2b4b70; color:#e7f1ff; }
+.mini button.on,.mk button.on,.wds button.on,.perm .pb .yes { background:linear-gradient(135deg,#367fe8,#536ff0); border-color:#6da8ff; color:white; }
+.mk button.hj { box-shadow:0 0 0 2px #9daaff; }
+.chart-title,.analytics-heading { color:#edf5ff; }
+.analytics-kicker { color:#70c9ff; }
+.chart-panel { min-width:0; }
+button { touch-action:manipulation; }
+
+/* Tablets, compact phones and narrow desktop windows */
+@media (max-width:760px) {
+  body { padding:calc(12px + env(safe-area-inset-top,0px)) 10px calc(24px + env(safe-area-inset-bottom,0px)); }
+  #app-screen { width:100%; }
+  .app-topbar { gap:8px; }
+  .profile-welcome { gap:9px; }
+  .brand-mark { width:39px;height:39px;border-radius:12px; }
+  .welcome-copy h1 { font-size:clamp(17px,4.5vw,22px); }
+  .topbar-actions { gap:6px; }
+  .logout-button { padding:8px 9px; }
+  .tabs { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:4px; padding:4px; overflow:visible; }
+  .tabs button { min-width:0; width:100%; padding:10px 2px; font-size:clamp(10px,2.6vw,13px); white-space:normal; }
+  .cards { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .g2 { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .charts-grid { grid-template-columns:minmax(0,1fr); }
+  .chart-panel.wide { grid-column:auto; }
+  .cal-grid { gap:3px; }
+  .cal-day { min-height:clamp(46px,10vw,66px); }
+  .cal-badge { white-space:nowrap; }
+}
+@media (max-width:390px) {
+  body { padding-left:8px; padding-right:8px; }
+  .welcome-copy p { display:none; }
+  .user-avatar { width:32px;height:32px; }
+  .logout-button { font-size:11px; padding:7px; }
+  .tabs button { font-size:10px; padding:9px 1px; }
+  .cal-grid { gap:2px; }
+  .cal-day { min-height:43px; padding:3px 2px; border-radius:5px; }
+  .cal-num { font-size:10px; }
+  .cal-badge { font-size:6.5px; padding:1px 2px; }
+  .cal-head { font-size:9px; }
+  .cards { gap:7px; }
+  .cd { padding:11px; }
+}
+@media (min-width:761px) {
+  .cal-day { min-height:clamp(68px,7vw,104px); }
+  .cal-badge { font-size:clamp(9px,.75vw,11px); }
+}
+@media (prefers-reduced-motion:reduce) {
+  *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; animation:none!important; }
+}
+
 </style>
 </head>
 <body>
@@ -333,7 +471,7 @@ button:active { transform:scale(.985); }
 <div id="app-screen" style="display:none;">
   <header class="app-topbar">
     <div class="profile-welcome">
-      <div class="brand-mark" aria-hidden="true">₿</div>
+      <div class="brand-mark" aria-hidden="true">✦</div>
       <div class="welcome-copy">
         <span class="eyebrow">SEU ESPAÇO FINANCEIRO</span>
         <h1 id="hello-name">Olá!</h1>
