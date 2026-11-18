@@ -1032,6 +1032,175 @@ html[data-palette="light"] .cal-day.sel { background:#e2f4f0!important; }
   .cal-badge { font-size:clamp(9px,.72vw,11px)!important; }
 }
 
+
+/* iOS Safari fix: keep the bottom navigation inside the viewport for every palette */
+#tabs.tabs {
+  box-sizing:border-box !important;
+  position:fixed !important;
+  bottom:0 !important;
+  top:auto !important;
+  z-index:99999 !important;
+  max-width:100vw !important;
+  overflow:hidden !important;
+}
+@media (max-width:760px) {
+  #tabs.tabs {
+    left:0 !important;
+    right:0 !important;
+    width:100vw !important;
+    max-width:100vw !important;
+    margin:0 !important;
+    transform:none !important;
+    display:grid !important;
+    grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+    gap:2px !important;
+    padding-left:max(5px,env(safe-area-inset-left,0px)) !important;
+    padding-right:max(5px,env(safe-area-inset-right,0px)) !important;
+    padding-bottom:calc(7px + env(safe-area-inset-bottom,0px)) !important;
+    border-radius:19px 19px 0 0 !important;
+  }
+  #tabs.tabs button {
+    box-sizing:border-box !important;
+    min-width:0 !important;
+    width:100% !important;
+    max-width:100% !important;
+    overflow:hidden !important;
+    padding-left:1px !important;
+    padding-right:1px !important;
+    flex:initial !important;
+    transform:none !important;
+  }
+  #tabs.tabs button .tab-label {
+    display:block !important;
+    max-width:100% !important;
+    overflow:hidden !important;
+    text-overflow:clip !important;
+    white-space:nowrap !important;
+  }
+}
+@media (min-width:761px) {
+  #tabs.tabs {
+    left:50% !important;
+    right:auto !important;
+    width:min(100%,1480px) !important;
+    max-width:1480px !important;
+    transform:translateX(-50%) !important;
+  }
+}
+/* Calm, low-contrast sage palette */
+html[data-palette="sage"] {
+  --bg:#f2f4ef; --card:#ffffff; --ink:#293630; --mut:#7b887f;
+  --line:#dfe6dd; --c:#789583; --v:#9aada0; --ok:#668b75; --bad:#c78d89;
+  color-scheme:light;
+}
+html[data-palette="sage"] body {
+  background:linear-gradient(155deg,#f7f8f4 0%,#eef2eb 58%,#f4f5f0 100%) !important;
+  color:#293630 !important;
+}
+html[data-palette="sage"] .app-topbar { border-color:#e0e7df !important; }
+html[data-palette="sage"] .brand-mark {
+  background:linear-gradient(145deg,#91ad9b,#6f8f7e) !important;
+  color:#fff !important; box-shadow:0 7px 20px rgba(105,139,119,.14) !important;
+}
+html[data-palette="sage"] .welcome-copy .eyebrow,
+html[data-palette="sage"] .analytics-kicker { color:#718f7d !important; }
+html[data-palette="sage"] .welcome-copy h1,
+html[data-palette="sage"] .nav,
+html[data-palette="sage"] .chart-title,
+html[data-palette="sage"] .analytics-heading { color:#293630 !important; }
+html[data-palette="sage"] .welcome-copy p,
+html[data-palette="sage"] .sync,
+html[data-palette="sage"] .note,
+html[data-palette="sage"] .chart-subtitle { color:#7b887f !important; }
+html[data-palette="sage"] .user-avatar {
+  background:#e6eee7 !important; border-color:#d1dfd3 !important; color:#688575 !important;
+}
+html[data-palette="sage"] .logout-button,
+html[data-palette="sage"] #btn-notif,
+html[data-palette="sage"] .nav button {
+  background:#fff !important; color:#60796a !important; border-color:#dfe6dd !important;
+}
+html[data-palette="sage"] .cd,
+html[data-palette="sage"] .card,
+html[data-palette="sage"] .big,
+html[data-palette="sage"] .chart-panel {
+  background:#fff !important; color:#293630 !important; border-color:#e0e7df !important;
+  box-shadow:0 5px 18px rgba(54,75,60,.045) !important; border-radius:18px !important;
+}
+html[data-palette="sage"] .cd small { color:#849087 !important; }
+html[data-palette="sage"] .cd b { color:#293630 !important; }
+html[data-palette="sage"] .card input,
+html[data-palette="sage"] .card select,
+html[data-palette="sage"] .fld input,
+html[data-palette="sage"] .fld select,
+html[data-palette="sage"] .row input,
+html[data-palette="sage"] textarea,
+html[data-palette="sage"] .au-field input,
+html[data-palette="sage"] .settings-select {
+  background:#fafbf8 !important; color:#293630 !important; border-color:#dfe6dd !important;
+}
+html[data-palette="sage"] .row,
+html[data-palette="sage"] .cal-day,
+html[data-palette="sage"] .mini button,
+html[data-palette="sage"] .mk button,
+html[data-palette="sage"] .mk .off,
+html[data-palette="sage"] .wds button {
+  background:#fff !important; color:#35453b !important; border-color:#dfe6dd !important;
+}
+html[data-palette="sage"] .cal-day.sel,
+html[data-palette="sage"] .wds button.on,
+html[data-palette="sage"] .mini button.on,
+html[data-palette="sage"] .mk button.on {
+  background:#e8f0e9 !important; border-color:#8da995 !important; color:#587463 !important;
+}
+html[data-palette="sage"] .cal-day.hj,
+html[data-palette="sage"] .mk button.hj { border-color:#c99b91 !important; }
+html[data-palette="sage"] .add,
+html[data-palette="sage"] .au-main {
+  background:linear-gradient(135deg,#819d8b,#6e8c7b) !important; color:#fff !important; border:0 !important;
+}
+html[data-palette="sage"] .del { background:#fff7f5 !important; color:#b67b75 !important; border-color:#ead2cd !important; }
+html[data-palette="sage"] .bar { background:#e9eee7 !important; }
+html[data-palette="sage"] .bar i { background:linear-gradient(90deg,#8da995,#b4c4b5) !important; }
+html[data-palette="sage"] .cal-badge.in { background:#e9f2eb !important;color:#668b75 !important; }
+html[data-palette="sage"] .cal-badge.out { background:#fbefed !important;color:#b97e79 !important; }
+html[data-palette="sage"] .cal-badge.wk { background:#edf0f5 !important;color:#78899d !important; }
+html[data-palette="sage"] .settings-dialog,
+html[data-palette="sage"] .au-card { background:#fff !important; color:#293630 !important; border-color:#dfe6dd !important; }
+html[data-palette="sage"] .settings-head h2,
+html[data-palette="sage"] .settings-section h3,
+html[data-palette="sage"] .au-card h2 { color:#293630 !important; }
+html[data-palette="sage"] .settings-help,
+html[data-palette="sage"] .settings-row p,
+html[data-palette="sage"] .au-sub { color:#7b887f !important; }
+html[data-palette="sage"] .theme-choice,
+html[data-palette="sage"] .settings-action,
+html[data-palette="sage"] .settings-close {
+  background:#f7f9f5 !important; color:#53695a !important; border-color:#dfe6dd !important;
+}
+html[data-palette="sage"] .theme-choice[aria-pressed="true"] {
+  border-color:#819d8b !important; box-shadow:0 0 0 2px rgba(129,157,139,.14) !important;
+}
+/* Palette-aware navigation surface and active state */
+html[data-palette="light"] #tabs.tabs,
+html[data-palette="sage"] #tabs.tabs {
+  background:rgba(255,255,255,.97) !important;
+  border-color:#dce8e3 !important;
+  box-shadow:0 -7px 24px rgba(37,67,57,.10) !important;
+}
+html[data-palette="light"] #tabs.tabs button,
+html[data-palette="sage"] #tabs.tabs button { color:#7b8c8b !important; }
+html[data-palette="light"] #tabs.tabs button.on {
+  background:#e2f3ef !important; color:#267f78 !important;
+}
+html[data-palette="sage"] #tabs.tabs button.on {
+  background:#e8f0e9 !important; color:#587463 !important;
+}
+html[data-palette="navy"] #tabs.tabs { background:rgba(8,24,44,.98) !important; }
+html[data-palette="ocean"] #tabs.tabs { background:rgba(5,35,49,.98) !important; }
+html[data-palette="violet"] #tabs.tabs { background:rgba(26,22,55,.98) !important; }
+html[data-palette="emerald"] #tabs.tabs { background:rgba(7,39,36,.98) !important; }
+
 </style>
 </head>
 <body>
@@ -1111,6 +1280,7 @@ html[data-palette="light"] .cal-day.sel { background:#e2f4f0!important; }
         <button class="theme-choice" type="button" data-palette-choice="violet" aria-pressed="false"><span class="theme-swatch" style="background:linear-gradient(135deg,#241b4b,#b49aff)"></span>Roxo</button>
         <button class="theme-choice" type="button" data-palette-choice="emerald" aria-pressed="false"><span class="theme-swatch" style="background:linear-gradient(135deg,#092d2a,#45d6a0)"></span>Esmeralda</button>
         <button class="theme-choice" type="button" data-palette-choice="light" aria-pressed="true"><span class="theme-swatch" style="background:linear-gradient(135deg,#fff,#9bb9df)"></span>Claro</button>
+        <button class="theme-choice" type="button" data-palette-choice="sage" aria-pressed="false"><span class="theme-swatch" style="background:linear-gradient(135deg,#f2f4ed,#8da995)"></span>Sálvia suave</button>
       </div>
     </section>
     <section class="settings-section">
@@ -1286,12 +1456,12 @@ function saveStartTab(value){
 }
 function paletteStorageKey(){ return "plano-palette-" + (currentUserUid || "guest"); }
 function applyPalette(name){
-  var allowed=["navy","ocean","violet","emerald","light"];
+  var allowed=["navy","ocean","violet","emerald","light","sage"];
   if(allowed.indexOf(name)<0) name="navy";
   document.documentElement.setAttribute("data-palette",name);
   try{ localStorage.setItem(paletteStorageKey(),name); }catch(e){}
   document.querySelectorAll("[data-palette-choice]").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.paletteChoice===name?"true":"false");});
-  var meta=document.querySelector('meta[name="theme-color"]'); if(meta) meta.content=name==="light"?"#f1f7f6":"#071426";
+  var meta=document.querySelector('meta[name="theme-color"]'); if(meta) meta.content=(name==="light"||name==="sage")?"#f3f5ef":(name==="ocean"?"#073b50":name==="violet"?"#241b4b":name==="emerald"?"#092d2a":"#071426");
 }
 function loadPalette(){
   var name="light";
