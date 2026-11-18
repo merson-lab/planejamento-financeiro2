@@ -1415,7 +1415,7 @@ function getKey() {
 }
 
 function fix() {
-  S.rp = S.rp || {}; S.au = S.au || {}; S.dw = S.dw || {}; S.real = S.real || {}; S.paid = S.paid || {}; S.gp = S.gp || {}; S.ini = S.ini || {}; S.rv = S.rv || {}; S.bdw = S.bdw || {};
+  S.rp = S.rp || {}; S.au = S.au || {}; S.dw = S.dw || {}; S.real = S.real || {}; S.paid = S.paid || {}; S.gp = S.gp || {}; S.ini = S.ini || {}; S.rv = S.rv || {}; S.bdw = S.bdw || {}; S.movimentos = Array.isArray(S.movimentos) ? S.movimentos : [];
   if (!S.tipoRenda) S.tipoRenda = "diaria";
   if (S.dia === undefined) S.dia = 0;
   if (!Array.isArray(S.dias) || !S.dias.length) S.dias = [1,2,3,4,5];
@@ -2609,18 +2609,83 @@ function vSaldo() {
   function X(d) { return 4 + (d - 1) * (W - 8) / Math.max(1, c.N - 1); }
   function Y(v) { return H - 6 - (v - mn) * (H - 12) / rg; }
   function pl(k) { return s.map(function(x){ return X(x.d).toFixed(1) + "," + Y(x[k]).toFixed(1); }).join(" "); }
-  
   h += '<div class="card"><svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img"><line x1="0" x2="' + W + '" y1="' + Y(0).toFixed(1) + '" y2="' + Y(0).toFixed(1) + '" stroke="var(--line)" stroke-dasharray="4 3"/><polyline fill="none" stroke="var(--c)" stroke-width="2.5" points="' + pl("pote") + '"/><polyline fill="none" stroke="var(--v)" stroke-width="2.5" points="' + pl("mim") + '"/></svg><div class="note"><span style="color:var(--c)">●</span> Pote das contas &nbsp; <span style="color:var(--v)">●</span> Pra mim</div></div>';
-  h += '<p class="note">O saldo sobe com as entradas de renda e desce nos dias de pagamento.</p>';
+  h += '<p class="note">Gráfico de previsão do planejamento. O extrato abaixo mostra somente movimentações reais registradas nesta aba.</p>';
+  var movs = (S.movimentos || []).slice().sort(function(a,b){ return (a.data||"").localeCompare(b.data||"") || (a.id||0)-(b.id||0); });
+  var saldoReal = movs.reduce(function(t,m){ return t + (Number(m.valor)||0); }, 0);
+  h += '<div class="card"><b>💰 Saldo real do Pote</b><div style="font-size:27px;font-weight:800;color:var(--c);margin:6px 0">' + R(saldoReal) + '</div><div class="note">Este valor considera o saldo inicial/correções e as movimentações lançadas no extrato. Não mistura previsões com dinheiro confirmado.</div>';
+  h += '<div class="g2" style="margin-top:10px"><button class="add" data-a="movin" style="margin:0">＋ Registrar entrada</button><button class="add" data-a="movout" style="margin:0">− Registrar saída</button></div><button class="add" data-a="movset" style="margin-top:8px">Ajustar saldo real do Pote</button></div>';
+  var mesKey = S.ym || currentYM, lista = movs.filter(function(m){ return (m.data||"").slice(0,7) === mesKey; }).reverse();
+  h += '<div class="card"><b>📒 Histórico de movimentações</b>';
+  if (!lista.length) h += '<p class="note">Ainda não há movimentações reais registradas neste mês. Use os botões acima para lançar entradas e saídas.</p>';
+  else {
+    var running = 0, saldos = {};
+    movs.forEach(function(m){ running += Number(m.valor)||0; saldos[m.id] = running; });
+    lista.forEach(function(m){
+      var positivo = (Number(m.valor)||0) >= 0;
+      var dt = m.data ? new Date(m.data + "T12:00:00").toLocaleDateString("pt-BR") : "Data não informada";
+      h += '<div class="row" style="align-items:flex-start"><div class="grow"><b>' + escHTML(m.descricao || "Movimentação") + '</b><small>' + dt + (m.tipo === "ajuste" ? ' · Ajuste de saldo' : '') + '</small><small>Saldo após: ' + R(saldos[m.id] || 0) + '</small></div><div class="rt"><b style="color:' + (positivo ? 'var(--ok)' : 'var(--bad)') + '">' + (positivo ? '+' : '−') + R(Math.abs(Number(m.valor)||0)) + '</b></div></div>';
+    });
+  }
+  h += '</div>';
+  h += '<div class="card"><b>📈 Previsão diária</b><p class="note">Abaixo continua a evolução prevista do Pote e do valor disponível para você.</p></div>';
   var td = new Date(), tdd = (td.getFullYear() == c.Y && td.getMonth() + 1 == c.M) ? td.getDate() : 0;
-  
   s.forEach(function(x){
-    h += '<div class="row' + (x.d == tdd ? " hj" : "") + '" style="align-items:flex-start"><div class="grow"><b>' + WN[new Date(c.Y, c.M-1, x.d).getDay()] + ' ' + x.d + '</b><small>' + (ic("tipoRenda")==="diaria" && x.wk ? "Separou " + R(x.dep) + " no pote" : "") + '</small>' +
-         x.ev.map(function(e){ return '<small style="color:' + (e.in ? "var(--ok)" : "var(--bad)") + '">' + (e.in ? "+ " : "− ") + e.n + " " + R(e.a) + '</small>'; }).join("") +
-         (ic("tipoRenda")==="diaria" && x.wk ? '<small>Gastei do pra mim: ' + inp("g", x.d, "g", (S.gp || {})[S.ym + "d" + x.d] || 0, "number") + '</small>' : '') +
-         '</div><div class="rt"><small>Pote</small><b style="color:var(--c)">' + R(x.pote) + '</b><small>Pra mim</small><b style="color:var(--v)">' + R(x.mim) + '</b></div></div>';
+    h += '<div class="row' + (x.d == tdd ? " hj" : "") + '" style="align-items:flex-start"><div class="grow"><b>' + WN[new Date(c.Y, c.M-1, x.d).getDay()] + ' ' + x.d + '</b><small>' + (ic("tipoRenda")==="diaria" && x.wk ? "Separou " + R(x.dep) + " no pote" : "") + '</small>' + x.ev.map(function(e){ return '<small style="color:' + (e.in ? "var(--ok)" : "var(--bad)") + '">' + (e.in ? "+ " : "− ") + escHTML(e.n) + " " + R(e.a) + '</small>'; }).join("") + (ic("tipoRenda")==="diaria" && x.wk ? '<small>Gastei do pra mim: ' + inp("g", x.d, "g", (S.gp || {})[S.ym + "d" + x.d] || 0, "number") + '</small>' : '') + '</div><div class="rt"><small>Pote previsto</small><b style="color:var(--c)">' + R(x.pote) + '</b><small>Pra mim</small><b style="color:var(--v)">' + R(x.mim) + '</b></div></div>';
   });
   return h;
+}
+
+function parseMoney(v) { var z = String(v == null ? "" : v).trim().replace(/\s/g, ""); if (z.indexOf(",") >= 0) z = z.replace(/\./g, "").replace(",", "."); return Number(z); }
+function escHTML(v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+function registrarMovimento(tipo, descricao, valor, data, ref) {
+  S.movimentos = Array.isArray(S.movimentos) ? S.movimentos : [];
+  S.movimentos.push({id:Date.now() + Math.floor(Math.random()*1000), tipo:tipo, descricao:descricao, valor:valor, data:data, ref:ref || null});
+}
+
+// Converte uma alteração real de recebimento/pagamento em lançamento do extrato.
+// O ref torna a operação idempotente: a mesma marcação não gera lançamento duplicado.
+function detalhePagamento(key) {
+  var prefix = S.ym, raw = key.indexOf(prefix) === 0 ? key.slice(prefix.length) : key,
+      c = calc(), diaMatch, b, w, x;
+  if (/^d\d+$/.test(raw)) {
+    diaMatch = +raw.slice(1);
+    if (ic("tipoRenda") === "diaria") return {desc:"Diária recebida — separação para o Pote (dia " + diaMatch + ")", valor:Math.max(0, Number(c.g)||0), tipo:"entrada"};
+  }
+  if (raw === "q1" || raw === "q2" || raw === "mes1") {
+    var diaRenda = raw === "mes1" ? Math.min(Number(ic("diaMes"))||1,c.N) : Math.min(Number(raw === "q1" ? ic("diaQ1") : ic("diaQ2"))||1,c.N);
+    var sep = (c.seps || []).filter(function(z){ return Number(z.d) === diaRenda; })[0];
+    var valorEntrada = sep ? Number(sep.sep)||0 : 0;
+    return {desc:(raw === "mes1" ? "Salário mensal" : (raw === "q1" ? "1ª quinzena" : "2ª quinzena")) + " — valor destinado ao Pote", valor:Math.max(0,valorEntrada), tipo:"entrada"};
+  }
+  x = XS().filter(function(z){ return String(z.id) === raw; })[0];
+  if (x) return {desc:"Renda recebida: " + x.n, valor:Math.max(0,Number(x.a)||0), tipo:"entrada"};
+  for (var j=0;j<c.L.length;j++) {
+    b = c.L[j];
+    if (b.t === "dd") {
+      diaMatch = raw.match(new RegExp("^" + String(b.id).replace(/[.*+?^${}()|[\]\\]/g,"\\$&") + "d(\\d+)$"));
+      if (diaMatch) return {desc:"Pagamento: " + b.n + " (dia " + diaMatch[1] + ")", valor:-Math.max(0,Number(b.a)||0), tipo:"saida"};
+    } else if (b.t === "s") {
+      (b.weekOccurrences || []).forEach(function(occ){ if (raw === b.id + "w" + occ.key) w = occ; });
+      if (w) return {desc:"Pagamento semanal: " + b.n, valor:-Math.max(0,Number(b.a)||0), tipo:"saida"};
+    } else if (String(b.id) === raw) {
+      return {desc:"Conta paga: " + b.n, valor:-Math.max(0,Number(b.a)||0), tipo:"saida"};
+    }
+  }
+  return null;
+}
+function sincronizarMovimentosPagos(antes, depois) {
+  var chaves = {};
+  Object.keys(antes).forEach(function(k){ chaves[k] = true; });
+  Object.keys(depois).forEach(function(k){ chaves[k] = true; });
+  Object.keys(chaves).forEach(function(key){
+    if (!!antes[key] === !!depois[key]) return;
+    var detalhe = detalhePagamento(key);
+    if (!detalhe || Math.abs(detalhe.valor) < 0.005) return;
+    var valor = depois[key] ? detalhe.valor : -detalhe.valor;
+    registrarMovimento(depois[key] ? detalhe.tipo : "estorno", depois[key] ? detalhe.desc : "Estorno — " + detalhe.desc,
+      valor, new Date().toISOString().slice(0,10), key + (depois[key] ? "#pago#" : "#estorno#") + Date.now());
+  });
 }
 
 function vCalendario() {
@@ -2779,6 +2844,7 @@ document.addEventListener("change", function(e){
 document.addEventListener("click", function(e){
   var t = e.target.closest("[data-a]"); if (!t) return;
   var a = t.dataset.a, i = t.dataset.i;
+  var paidAntes = Object.assign({}, S.paid || {});
   if (a == "tab") { tab = +i; try{localStorage.setItem(startTabStorageKey(),String(tab));}catch(e){} }
   else if (a == "pm" || a == "nm") {
     var p = S.ym.split("-"), d = new Date(+p[0], +p[1] - 1 + (a == "nm" ? 1 : -1), 1);
@@ -2788,6 +2854,24 @@ document.addEventListener("click", function(e){
   else if (a == "selday") selDay = +i;
   else if (a == "tvenc") VOPEN = !VOPEN;
   else if (a == "tog") { var k = S.ym + i; S.paid[k] = !S.paid[k]; }
+  else if (a == "movin" || a == "movout") {
+    var desc = prompt("Descrição da movimentação:", a === "movin" ? "Entrada no Pote" : "Saída do Pote");
+    if (desc === null) return;
+    var raw = prompt("Valor em reais (ex.: 150,00):", "0,00");
+    if (raw === null) return;
+    var val = parseMoney(raw);
+    if (!isFinite(val) || val <= 0) { alert("Informe um valor maior que zero."); return; }
+    registrarMovimento(a === "movin" ? "entrada" : "saida", desc.trim() || (a === "movin" ? "Entrada" : "Saída"), a === "movin" ? val : -val, new Date().toISOString().slice(0,10));
+  }
+  else if (a == "movset") {
+    var atualMov = (S.movimentos || []).reduce(function(t,m){ return t + (Number(m.valor)||0); }, 0);
+    var rawSaldo = prompt("Quanto você tem REALMENTE no Pote agora?", atualMov.toFixed(2).replace(".", ","));
+    if (rawSaldo === null) return;
+    var novoSaldo = parseMoney(rawSaldo);
+    if (!isFinite(novoSaldo) || novoSaldo < 0) { alert("Informe um saldo válido, igual ou maior que zero."); return; }
+    var diferenca = novoSaldo - atualMov;
+    if (Math.abs(diferenca) > 0.004) registrarMovimento("ajuste", "Correção do saldo real", diferenca, new Date().toISOString().slice(0,10));
+  }
   else if (a == "wd") {
     var cur = ic("dias").slice(), x = cur.indexOf(+i);
     if (x < 0) cur.push(+i);
@@ -2874,6 +2958,7 @@ document.addEventListener("click", function(e){
       else o.f = prevYM(S.ym);
     }
   }
+  sincronizarMovimentosPagos(paidAntes, S.paid || {});
   save(); draw();
 });
 
