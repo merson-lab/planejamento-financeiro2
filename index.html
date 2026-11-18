@@ -3,15 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0e7c7b">
+<meta name="theme-color" content="#07110f">
 <meta name="color-scheme" content="light dark">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>Planejamento Financeiro Completo</title>
+<title>Meu Financeiro | Painel</title>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<!-- Gráficos interativos -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -170,6 +172,118 @@ textarea { font: inherit; }
 .au-msg.ok { color: var(--ok); }
 .au-switch { text-align: center; color: var(--mut); font-size: 16px; margin: 22px 0 0; }
 .au-switch button { border: 0; background: transparent; color: var(--brand); font-weight: 800; font-size: 16px; cursor: pointer; padding: 0; }
+
+/* ===== REDESIGN PREMIUM: DARK + ESMERALDA ===== */
+:root {
+  --bg:#07110f; --card:#101d19; --ink:#edf7f1; --mut:#91a69b;
+  --line:#23372e; --c:#20c58a; --v:#8b9cfb; --ok:#36d399; --bad:#ff7777;
+  color-scheme:dark;
+}
+html { min-height:100%; background:var(--bg); }
+body {
+  max-width:none; width:100%; min-height:100vh; margin:0; padding:28px clamp(14px,3vw,44px) calc(34px + env(safe-area-inset-bottom,0px));
+  background:radial-gradient(ellipse at 12% 0%,rgba(32,197,138,.12),transparent 34%),linear-gradient(180deg,#08130f 0%,#07110f 55%,#091510 100%);
+  color:var(--ink); font-family:Inter,"Segoe UI",system-ui,sans-serif;
+}
+#app-screen { width:min(100%,1380px); margin:0 auto; }
+#auth-screen { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px 0; }
+.au-card { width:min(100%,470px); background:rgba(16,29,25,.96); border:1px solid #294238; box-shadow:0 24px 80px rgba(0,0,0,.35); }
+.au-card h2 { letter-spacing:-1px; }
+.au-field input { background:#0a1712; border-color:#2b4237; }
+.au-main { background:linear-gradient(135deg,#20c58a,#119b6b); color:#04140d; }
+.au-main:active { background:#18a976; }
+.au-forgot button,.au-switch button { color:#43dca4; }
+.au-google { background:#0b1712; border-color:#2b4237; }
+.app-topbar { display:flex; align-items:center; justify-content:space-between; gap:18px; margin:0 0 22px; padding:8px 0 18px; border-bottom:1px solid rgba(145,166,155,.14); }
+.profile-welcome { display:flex; align-items:center; gap:14px; min-width:0; }
+.brand-mark { width:48px; height:48px; flex:none; display:grid; place-items:center; border-radius:16px; color:#04140d; font-size:27px; font-weight:900; background:linear-gradient(145deg,#5af0b5,#16a875); box-shadow:0 8px 28px rgba(32,197,138,.2); }
+.welcome-copy { min-width:0; }
+.welcome-copy .eyebrow { display:block; color:#4bdca7; font-size:10px; font-weight:800; letter-spacing:1.8px; margin-bottom:3px; }
+.welcome-copy h1 { margin:0; text-align:left; font-size:clamp(21px,3vw,29px); letter-spacing:-.8px; line-height:1.2; }
+.welcome-copy p { margin:4px 0 0; color:var(--mut); font-size:13px; }
+.topbar-actions { display:flex; align-items:center; gap:10px; }
+.user-avatar { width:42px; height:42px; display:grid; place-items:center; border-radius:50%; background:#173d2e; border:1px solid #2b7958; color:#7bf0bd; font-weight:800; }
+.logout-button { border:1px solid var(--line); background:#102019; color:var(--mut); border-radius:11px; padding:10px 14px; font-size:13px; font-weight:700; cursor:pointer; }
+.sync { text-align:left; margin:0 0 10px; min-height:16px; color:#8da99a; }
+#btn-notif { width:auto; padding:9px 13px; border-radius:11px; border-color:var(--line)!important; background:#102019!important; color:#b8cfc2!important; font-size:12px; }
+.tabs { display:flex; gap:7px; margin:16px 0 20px; padding:6px; overflow-x:auto; border:1px solid rgba(145,166,155,.13); border-radius:15px; background:rgba(12,27,20,.85); scrollbar-width:thin; }
+.tabs button { flex:1 0 auto; min-width:88px; padding:11px 16px; border:0; border-radius:10px; background:transparent; color:#9db2a6; font-size:13px; transition:.2s ease; }
+.tabs button.on { background:linear-gradient(135deg,#20c58a,#159c6c); color:#04140d; box-shadow:0 5px 18px rgba(32,197,138,.16); }
+.nav { margin:0 0 16px; color:#eaf5ef; font-size:17px; }
+.nav button { border:1px solid #294238; background:#102019; color:#c7ddd0; border-radius:11px; }
+.cards { grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:16px 0; }
+.cd,.card,.big { background:linear-gradient(145deg,#12231b,#0e1b16); border:1px solid #263d32; border-radius:16px; padding:17px; box-shadow:0 8px 24px rgba(0,0,0,.12); }
+.cd small { color:#91a99b; font-size:12px; margin-bottom:7px; }
+.cd b { display:block; font-size:clamp(17px,2vw,23px); letter-spacing:-.4px; }
+.big { border:1px solid rgba(32,197,138,.4); background:linear-gradient(120deg,rgba(32,197,138,.12),rgba(16,29,25,.95)); }
+.card { margin-bottom:14px; }
+.card input,.card select,.fld input,.fld select,.row input,textarea { background:#091610!important; color:var(--ink)!important; border:1px solid #2b4237!important; border-radius:10px!important; }
+input:focus,select:focus,textarea:focus { outline:2px solid rgba(32,197,138,.35); border-color:#20c58a!important; }
+button { transition:transform .16s ease,border-color .16s ease,background .16s ease; }
+button:active { transform:scale(.985); }
+.add,.del { border-radius:11px; padding:12px 14px; background:#12251b; border-color:#2b4939; color:#d7e9de; }
+.add:hover { border-color:#20c58a; }
+.del { color:#ff9292; border-color:#7d3b3b; }
+.row { background:#102019; border-color:#263d32; border-radius:13px; }
+.row.hj { border-color:#20c58a; }
+.row.done { opacity:.62; }
+.note,.cd small,.grow small,.rt small { color:var(--mut); }
+.amt.in { color:#4cdda5; }
+.bar { height:9px; background:#20352a; border-radius:99px; }
+.bar i { background:linear-gradient(90deg,#159c6c,#54e7ad); }
+.warn,.alert-box,.okb { border-radius:13px; }
+.warn { background:rgba(255,119,119,.08); }
+.okb { background:rgba(54,211,153,.08); }
+.alert-box { background:rgba(244,181,77,.08); }
+.cal-day,.mini button,.mk button,.mk .off { background:#102019; border-color:#263d32; color:var(--ink); border-radius:9px; }
+.cal-day.sel { background:rgba(32,197,138,.12); border-color:#20c58a; }
+.cal-day.hj,.mk button.hj { border-color:#8b9cfb; }
+.cal-badge.in { background:rgba(54,211,153,.15); color:#65e4ae; }
+.cal-badge.out { background:rgba(255,119,119,.14); color:#ff9999; }
+.cal-badge.wk { background:rgba(139,156,251,.15); color:#aab5ff; }
+.wds button { background:#102019; border-color:#294238; color:#b9cfc2; border-radius:10px; }
+.wds button.on,.mini button.on,.mk button.on { background:#168e63; border-color:#20c58a; color:#fff; }
+.perm .pb .yes { background:#168e63; border-color:#20c58a; }
+.perm .pb .no { background:transparent; }
+.charts-grid { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr); gap:14px; margin:18px 0; }
+.chart-panel { min-width:0; background:linear-gradient(145deg,#12231b,#0e1b16); border:1px solid #263d32; border-radius:17px; padding:17px; box-shadow:0 8px 24px rgba(0,0,0,.12); }
+.chart-panel.wide { grid-column:1/-1; }
+.chart-title { margin:0 0 4px; font-size:14px; font-weight:800; color:#e6f3eb; }
+.chart-subtitle { margin:0 0 14px; color:#8fa99a; font-size:11px; }
+.chart-wrap { height:230px; position:relative; }
+.chart-wrap.compact { height:220px; }
+.analytics-kicker { margin:22px 0 5px; color:#48dba5; font-size:10px; font-weight:800; letter-spacing:1.6px; }
+.analytics-heading { margin:0; font-size:19px; letter-spacing:-.5px; }
+@media (max-width:760px) {
+ body { padding:calc(14px + env(safe-area-inset-top,0px)) 13px calc(30px + env(safe-area-inset-bottom,0px)); }
+ .app-topbar { margin-bottom:15px; padding-bottom:14px; }
+ .brand-mark { width:42px;height:42px;border-radius:14px; }
+ .welcome-copy h1 { font-size:21px; }
+ .welcome-copy p { font-size:11px; }
+ .user-avatar { width:37px;height:37px; }
+ .logout-button { padding:9px 10px; }
+ .tabs { margin:12px 0 16px; }
+ .tabs button { min-width:76px; padding:10px 12px; }
+ .cards { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+ .cd { padding:13px; }
+ .cd b { font-size:18px; }
+ .charts-grid { grid-template-columns:1fr; gap:10px; margin:14px 0; }
+ .chart-panel.wide { grid-column:auto; }
+ .chart-panel { padding:14px; }
+ .chart-wrap { height:210px; }
+ .chart-wrap.compact { height:205px; }
+ .g2 { gap:7px; }
+ .cal-day { min-height:53px; }
+}
+@media (max-width:380px) {
+ .welcome-copy .eyebrow { font-size:9px; letter-spacing:1px; }
+ .welcome-copy h1 { font-size:18px; }
+ .welcome-copy p { display:none; }
+ .logout-button { font-size:11px; }
+ .cd b { font-size:16px; }
+ .cd small { font-size:11px; }
+}
+
 </style>
 </head>
 <body>
@@ -217,10 +331,20 @@ textarea { font: inherit; }
 
 <!-- APLICAÇÃO PRINCIPAL -->
 <div id="app-screen" style="display:none;">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-    <h1>Planejamento Completo</h1>
-    <button id="logout-btn" style="font-size:12px; padding:6px 10px; border-radius:6px; border:1px solid var(--line); background:var(--card); cursor:pointer;">Sair da Conta</button>
-  </div>
+  <header class="app-topbar">
+    <div class="profile-welcome">
+      <div class="brand-mark" aria-hidden="true">₿</div>
+      <div class="welcome-copy">
+        <span class="eyebrow">SEU ESPAÇO FINANCEIRO</span>
+        <h1 id="hello-name">Olá!</h1>
+        <p>Veja como está sua vida financeira.</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <div class="user-avatar" id="user-avatar" aria-label="Perfil do usuário">U</div>
+      <button id="logout-btn" class="logout-button" type="button">Sair</button>
+    </div>
+  </header>
   <div class="sync" id="sync"></div>
   <div style="margin-bottom: 10px;"><button class="add" data-a="notif" id="btn-notif" style="margin-top:0;background:var(--card);color:var(--ink);">🔔 Avisar vencimentos quando eu abrir o app</button></div>
   <div class="tabs" id="tabs"></div>
@@ -355,14 +479,67 @@ function listenCloud(uid) {
   });
 }
 
+var dashboardCharts = {};
+function updateProfileHeader(user) {
+  var full = (user && user.displayName) ? user.displayName.trim() : "";
+  if (!full && user && user.email) full = user.email.split("@")[0].replace(/[._-]+/g," ");
+  if (!full) full = "por aqui";
+  var first = full.split(/\s+/)[0];
+  var hello = document.getElementById("hello-name");
+  var avatar = document.getElementById("user-avatar");
+  if (hello) hello.textContent = "Olá, " + first + "!";
+  if (avatar) avatar.textContent = full.split(/\s+/).slice(0,2).map(function(x){return x.charAt(0);}).join("").toUpperCase();
+}
+function destroyDashboardCharts() {
+  Object.keys(dashboardCharts).forEach(function(k){
+    if (dashboardCharts[k]) { dashboardCharts[k].destroy(); dashboardCharts[k] = null; }
+  });
+}
+function renderDashboardCharts(c, rs) {
+  if (!window.Chart || !document.getElementById("balanceChart")) return;
+  destroyDashboardCharts();
+  Chart.defaults.color = "#9bb2a4";
+  Chart.defaults.font.family = "Inter, Segoe UI, system-ui, sans-serif";
+  var gridColor = "rgba(145,166,155,.12)";
+  var currency = function(v){ return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}); };
+  var days = c.days || [];
+  dashboardCharts.balance = new Chart(document.getElementById("balanceChart"), {
+    type:"line",
+    data:{labels:days.map(function(x){return x.d; }),datasets:[
+      {label:"Pote das contas",data:days.map(function(x){return x.pote;}),borderColor:"#27cf91",backgroundColor:"rgba(39,207,145,.12)",fill:true,tension:.36,borderWidth:2.5,pointRadius:0,pointHitRadius:10},
+      {label:"Dinheiro disponível",data:days.map(function(x){return x.mim;}),borderColor:"#9a9fff",backgroundColor:"rgba(154,159,255,.06)",fill:false,tension:.36,borderWidth:2.2,pointRadius:0,pointHitRadius:10}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{legend:{position:"bottom",labels:{usePointStyle:true,boxWidth:7,padding:18}},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+": "+currency(ctx.parsed.y);}}}},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:10}},y:{grid:{color:gridColor},ticks:{callback:function(v){return "R$ "+Number(v).toLocaleString("pt-BR");}}}}}
+  });
+  var expenseItems = (c.L||[]).map(function(b){
+    var value = b.t === "dd" ? (b.tt||0) : (b.t === "s" ? (b.tw||0) : (b.a||0));
+    return {name:b.n||"Conta",value:value};
+  }).filter(function(x){return x.value>0;}).sort(function(a,b){return b.value-a.value;});
+  var expenseLabels = expenseItems.slice(0,6).map(function(x){return x.name;});
+  var expenseValues = expenseItems.slice(0,6).map(function(x){return x.value;});
+  if (expenseItems.length>6) { expenseLabels.push("Outras"); expenseValues.push(expenseItems.slice(6).reduce(function(t,x){return t+x.value;},0)); }
+  if (!expenseValues.length) { expenseLabels=["Sem contas cadastradas"]; expenseValues=[0]; }
+  dashboardCharts.expenses = new Chart(document.getElementById("expenseChart"), {
+    type:"doughnut",data:{labels:expenseLabels,datasets:[{data:expenseValues,backgroundColor:["#27cf91","#8f9cff","#f3bd62","#4e9ed8","#d98bc4","#83b69c","#6d8796"],borderColor:"#101d19",borderWidth:4,hoverOffset:6}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"68%",plugins:{legend:{position:"bottom",labels:{usePointStyle:true,boxWidth:7,padding:13,font:{size:10}}},tooltip:{callbacks:{label:function(ctx){return ctx.label+": "+currency(ctx.parsed);}}}}}
+  });
+  dashboardCharts.payments = new Chart(document.getElementById("paymentChart"), {
+    type:"bar",data:{labels:["Receitas previstas","Contas previstas","Já pagas"],datasets:[{data:[rs.iT||0,rs.tT||0,rs.pg||0],backgroundColor:["rgba(39,207,145,.8)","rgba(154,159,255,.8)","rgba(243,189,98,.85)"],borderRadius:8,borderSkipped:false,maxBarThickness:42}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return currency(ctx.parsed.y);}}}},scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{beginAtZero:true,grid:{color:gridColor},ticks:{callback:function(v){return "R$ "+Number(v).toLocaleString("pt-BR");}}}}}
+  });
+}
+
 auth.onAuthStateChanged(function(user) {
   if (user) {
     currentUserUid = user.uid;
+    updateProfileHeader(user);
     document.getElementById("auth-screen").style.display = "none";
     document.getElementById("app-screen").style.display = "block";
     listenCloud(user.uid);
   } else {
     currentUserUid = null;
+    updateProfileHeader(null);
+    destroyDashboardCharts();
     if (unsubscribeSync) { unsubscribeSync(); unsubscribeSync = null; }
     S = createEmptyState();
     document.getElementById("auth-screen").style.display = "block";
@@ -799,6 +976,12 @@ function vMes() {
        '<div class="cd"><small>Falta pagar</small><b style="color:var(--bad)">' + R(fl) + '</b></div>' +
        '<div class="cd"><small>Entrou até agora</small><b>' + R(en) + '</b></div>' +
        '<div class="cd"><small>Sobra em mãos</small><b style="color:' + (sobraEmMaosLiquida < -0.005 ? "var(--bad)" : "var(--v)") + '">' + R(sobraEmMaosLiquida) + '</b></div>' +
+       '</div>' +
+       '<div class="analytics-kicker">ANÁLISE INTELIGENTE</div><h2 class="analytics-heading">Visão dos seus números</h2>' +
+       '<div class="charts-grid">' +
+       '<section class="chart-panel wide"><h3 class="chart-title">Evolução do dinheiro ao longo do mês</h3><p class="chart-subtitle">Acompanhe o pote das contas e o valor disponível para você, dia a dia</p><div class="chart-wrap"><canvas id="balanceChart" aria-label="Gráfico da evolução dos saldos"></canvas></div></section>' +
+       '<section class="chart-panel"><h3 class="chart-title">Distribuição das contas</h3><p class="chart-subtitle">Veja quais contas representam maior parte dos gastos previstos</p><div class="chart-wrap compact"><canvas id="expenseChart" aria-label="Gráfico de distribuição das contas"></canvas></div></section>' +
+       '<section class="chart-panel"><h3 class="chart-title">Comparativo financeiro</h3><p class="chart-subtitle">Receitas, contas previstas e pagamentos realizados</p><div class="chart-wrap compact"><canvas id="paymentChart" aria-label="Gráfico comparativo financeiro"></canvas></div></section>' +
        '</div>' +
        '<div class="bar"><i style="width:' + (tT > 0 ? Math.min(100, Math.round(pg / tT * 100)) : 0) + '%"></i></div>' +
        '<div class="note" style="margin-top:0">' + (tT > 0 ? Math.min(100, Math.round(pg / tT * 100)) : 0) + '% das contas do mês já pagas</div>' +
@@ -1284,6 +1467,12 @@ function draw() {
     return '<button data-a="tab" data-i="'+i+'" class="'+(i==tab?"on":"")+'">'+n+'</button>';
   }).join("");
   document.getElementById("view").innerHTML = [vRenda, vMes, vMarcar, vCalendario, vSaldo, vContas][tab]();
+  if (tab === 1) {
+    var chartCalc = calc();
+    renderDashboardCharts(chartCalc, RS(chartCalc));
+  } else {
+    destroyDashboardCharts();
+  }
   
   var btnNotif = document.getElementById("btn-notif");
   if (btnNotif) {
