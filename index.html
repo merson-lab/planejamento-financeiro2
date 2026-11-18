@@ -422,6 +422,69 @@ button { touch-action:manipulation; }
   *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; animation:none!important; }
 }
 
+
+/* Navegação persistente: as abas acompanham a rolagem sem cobrir o conteúdo */
+#tabs.tabs {
+  position:sticky; top:env(safe-area-inset-top,0px); z-index:80;
+  margin-top:12px; padding:7px; backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+  box-shadow:0 12px 28px rgba(0,0,0,.22);
+  scroll-margin-top:12px;
+}
+#tabs.tabs button { min-height:42px; }
+.settings-button {
+  width:42px;height:42px;display:grid;place-items:center;border-radius:13px;
+  border:1px solid #34577e;background:#102541;color:#d9edff;font-size:21px;
+  cursor:pointer;flex:none;
+}
+.settings-button:focus-visible,.theme-choice:focus-visible { outline:3px solid #70c9ff;outline-offset:2px; }
+.settings-overlay { position:fixed;inset:0;z-index:300;background:rgba(2,9,20,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:16px; }
+.settings-overlay.open { display:flex; }
+.settings-dialog { width:min(100%,560px);max-height:min(88svh,780px);overflow:auto;background:linear-gradient(155deg,#132d4e,#0b1c33);border:1px solid #35577d;border-radius:22px;padding:clamp(17px,4vw,26px);box-shadow:0 28px 90px rgba(0,0,0,.5);color:#edf5ff; }
+.settings-head { display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px; }
+.settings-head h2 { margin:0;font-size:23px; }
+.settings-close { border:1px solid #34577e;background:#102541;color:#eaf4ff;border-radius:11px;width:40px;height:40px;font-size:20px;cursor:pointer; }
+.settings-section { padding:16px 0;border-top:1px solid rgba(151,185,224,.17); }
+.settings-section h3 { margin:0 0 5px;font-size:15px; }
+.settings-help { margin:0 0 12px;color:#a9bdd8;font-size:12px;line-height:1.5; }
+.theme-options { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px; }
+.theme-choice { display:flex;align-items:center;gap:10px;text-align:left;padding:11px;border:1px solid #34577e;border-radius:13px;background:#102541;color:#edf5ff;font-weight:700;cursor:pointer; }
+.theme-choice[aria-pressed="true"] { border-color:#75caff;box-shadow:0 0 0 2px rgba(85,184,255,.2); }
+.theme-swatch { width:27px;height:27px;border-radius:9px;flex:none;border:1px solid rgba(255,255,255,.25); }
+.settings-row { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0; }
+.settings-row p { margin:0;color:#a9bdd8;font-size:12px; }
+.settings-action { border:1px solid #34577e;border-radius:11px;background:#102541;color:#eaf4ff;padding:10px 13px;font-weight:700;cursor:pointer; }
+.settings-danger { border-color:#a34d65;color:#ffb1bd;background:rgba(153,39,69,.18); }
+.settings-status { min-height:18px;color:#9ed4ff;font-size:12px;margin-top:8px; }
+.settings-overlay button { font:inherit; }
+/* Paletas opcionais */
+html[data-palette="ocean"] { --c:#42d5d0;--v:#58a6ff; }
+html[data-palette="violet"] { --c:#b49aff;--v:#70b7ff; }
+html[data-palette="emerald"] { --c:#45d6a0;--v:#82b7ff; }
+html[data-palette="light"] { --bg:#edf3fb;--card:#fff;--ink:#14243b;--mut:#5d718c;--line:#d5e0ef;color-scheme:light; }
+html[data-palette="ocean"] .tabs button.on,html[data-palette="ocean"] .au-main { background:linear-gradient(135deg,#42d5d0,#2788d8); }
+html[data-palette="violet"] .tabs button.on,html[data-palette="violet"] .au-main { background:linear-gradient(135deg,#b49aff,#657ef0); }
+html[data-palette="emerald"] .tabs button.on,html[data-palette="emerald"] .au-main { background:linear-gradient(135deg,#45d6a0,#238e83); }
+html[data-palette="ocean"] body { background:radial-gradient(ellipse at 8% -8%,rgba(38,205,203,.22),transparent 38%),linear-gradient(160deg,#06202f,#071426 58%,#092538); }
+html[data-palette="ocean"] .cd,html[data-palette="ocean"] .card,html[data-palette="ocean"] .big,html[data-palette="ocean"] .chart-panel { border-color:#24556b;background:linear-gradient(145deg,#10354b,#0b263b); }
+html[data-palette="violet"] body { background:radial-gradient(ellipse at 8% -8%,rgba(157,120,255,.23),transparent 38%),linear-gradient(160deg,#171331,#0b1530 58%,#171b3a); }
+html[data-palette="violet"] .cd,html[data-palette="violet"] .card,html[data-palette="violet"] .big,html[data-palette="violet"] .chart-panel { border-color:#4b4779;background:linear-gradient(145deg,#252448,#171d3b); }
+html[data-palette="emerald"] body { background:radial-gradient(ellipse at 8% -8%,rgba(55,206,151,.2),transparent 38%),linear-gradient(160deg,#082521,#071b25 58%,#0b2b32); }
+html[data-palette="emerald"] .cd,html[data-palette="emerald"] .card,html[data-palette="emerald"] .big,html[data-palette="emerald"] .chart-panel { border-color:#285b55;background:linear-gradient(145deg,#123b39,#0c2b34); }
+html[data-palette="light"] body { background:linear-gradient(150deg,#f5f8ff,#e8f0fb);color:#14243b; }
+html[data-palette="light"] .tabs { background:rgba(255,255,255,.94);border-color:#d5e0ef; }
+html[data-palette="light"] .tabs button { color:#526783; }
+html[data-palette="light"] .tabs button.on { color:#fff;background:linear-gradient(135deg,#347fd2,#536ff0); }
+html[data-palette="light"] .cd,html[data-palette="light"] .card,html[data-palette="light"] .big,html[data-palette="light"] .chart-panel { background:linear-gradient(145deg,#fff,#f3f7fd);border-color:#d5e0ef; }
+html[data-palette="light"] .row,html[data-palette="light"] .add,html[data-palette="light"] .nav button,html[data-palette="light"] .mini button,html[data-palette="light"] .mk button { background:#f5f8fd;color:#14243b;border-color:#d5e0ef; }
+html[data-palette="light"] .card input,html[data-palette="light"] .card select,html[data-palette="light"] .fld input,html[data-palette="light"] .fld select,html[data-palette="light"] .row input,html[data-palette="light"] textarea,html[data-palette="light"] .au-field input { background:#fff!important;color:#14243b!important;border-color:#cbd8e9!important; }
+html[data-palette="light"] .welcome-copy h1,html[data-palette="light"] .chart-title,html[data-palette="light"] .analytics-heading,html[data-palette="light"] .cd b { color:#14243b; }
+html[data-palette="light"] .settings-dialog { background:linear-gradient(155deg,#fff,#edf3fb);color:#14243b;border-color:#cad8eb; }
+html[data-palette="light"] .settings-section { border-color:#d8e2ef; }
+html[data-palette="light"] .settings-help,html[data-palette="light"] .settings-row p { color:#5d718c; }
+html[data-palette="light"] .theme-choice,html[data-palette="light"] .settings-action,html[data-palette="light"] .settings-close { background:#f1f5fb;color:#14243b;border-color:#d0dceb; }
+@media(max-width:420px){ .settings-button{width:36px;height:36px;font-size:18px}.theme-options{grid-template-columns:1fr 1fr}.settings-dialog{border-radius:18px} }
+@media(min-width:761px){ #tabs.tabs{top:0;margin-top:14px} }
+
 </style>
 </head>
 <body>
@@ -480,6 +543,7 @@ button { touch-action:manipulation; }
     </div>
     <div class="topbar-actions">
       <div class="user-avatar" id="user-avatar" aria-label="Perfil do usuário">U</div>
+      <button id="settings-open" class="settings-button" type="button" aria-label="Abrir configurações" title="Configurações">⚙</button>
       <button id="logout-btn" class="logout-button" type="button">Sair</button>
     </div>
   </header>
@@ -487,6 +551,35 @@ button { touch-action:manipulation; }
   <div style="margin-bottom: 10px;"><button class="add" data-a="notif" id="btn-notif" style="margin-top:0;background:var(--card);color:var(--ink);">🔔 Avisar vencimentos quando eu abrir o app</button></div>
   <div class="tabs" id="tabs"></div>
   <div id="view"></div>
+</div>
+
+<div class="settings-overlay" id="settings-overlay" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+  <div class="settings-dialog">
+    <div class="settings-head"><h2 id="settings-title">⚙ Configurações</h2><button class="settings-close" id="settings-close" type="button" aria-label="Fechar configurações">×</button></div>
+    <section class="settings-section">
+      <h3>🎨 Tema e cores</h3><p class="settings-help">Escolha a aparência do aplicativo. Sua preferência fica salva neste aparelho.</p>
+      <div class="theme-options">
+        <button class="theme-choice" type="button" data-palette-choice="navy" aria-pressed="true"><span class="theme-swatch" style="background:linear-gradient(135deg,#071426,#55b8ff)"></span>Azul-marinho</button>
+        <button class="theme-choice" type="button" data-palette-choice="ocean" aria-pressed="false"><span class="theme-swatch" style="background:linear-gradient(135deg,#073b50,#42d5d0)"></span>Oceano</button>
+        <button class="theme-choice" type="button" data-palette-choice="violet" aria-pressed="false"><span class="theme-swatch" style="background:linear-gradient(135deg,#241b4b,#b49aff)"></span>Roxo</button>
+        <button class="theme-choice" type="button" data-palette-choice="emerald" aria-pressed="false"><span class="theme-swatch" style="background:linear-gradient(135deg,#092d2a,#45d6a0)"></span>Esmeralda</button>
+        <button class="theme-choice" type="button" data-palette-choice="light" aria-pressed="false"><span class="theme-swatch" style="background:linear-gradient(135deg,#fff,#9bb9df)"></span>Claro</button>
+      </div>
+    </section>
+    <section class="settings-section">
+      <h3>🔔 Notificações</h3><p class="settings-help">O navegador controla a permissão de notificações. Você pode ativá-la pelo botão de avisos na tela principal ou nas configurações do aparelho.</p>
+      <div class="settings-row"><p id="settings-notif-state">Verificando permissão…</p><button class="settings-action" id="settings-notif" type="button">Ativar avisos</button></div>
+    </section>
+    <section class="settings-section">
+      <h3>🔐 Privacidade e dados</h3><p class="settings-help">Os dados financeiros da conta são sincronizados com o Firebase e também podem ficar armazenados localmente neste aparelho. Não compartilhe seu acesso.</p>
+      <div class="settings-row"><p>Conta conectada</p><b id="settings-account" style="font-size:12px;overflow-wrap:anywhere;text-align:right"></b></div>
+    </section>
+    <section class="settings-section">
+      <h3>🗑️ Excluir conta</h3><p class="settings-help">A exclusão remove o cadastro de autenticação e os dados financeiros associados no banco deste aplicativo. É irreversível. O Firebase pode exigir que você entre novamente antes de concluir.</p>
+      <button class="settings-action settings-danger" id="settings-delete" type="button">Excluir minha conta e meus dados</button>
+      <div class="settings-status" id="settings-status" aria-live="polite"></div>
+    </section>
+  </div>
 </div>
 
 <script>
@@ -628,6 +721,70 @@ function updateProfileHeader(user) {
   if (hello) hello.textContent = "Olá, " + first + "!";
   if (avatar) avatar.textContent = full.split(/\s+/).slice(0,2).map(function(x){return x.charAt(0);}).join("").toUpperCase();
 }
+function paletteStorageKey(){ return "plano-palette-" + (currentUserUid || "guest"); }
+function applyPalette(name){
+  var allowed=["navy","ocean","violet","emerald","light"];
+  if(allowed.indexOf(name)<0) name="navy";
+  document.documentElement.setAttribute("data-palette",name);
+  try{ localStorage.setItem(paletteStorageKey(),name); }catch(e){}
+  document.querySelectorAll("[data-palette-choice]").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.paletteChoice===name?"true":"false");});
+  var meta=document.querySelector('meta[name="theme-color"]'); if(meta) meta.content=name==="light"?"#edf3fb":"#071426";
+}
+function loadPalette(){
+  var name="navy";try{name=localStorage.getItem(paletteStorageKey())||"navy";}catch(e){}
+  applyPalette(name);
+}
+function openSettings(){
+  var ov=document.getElementById("settings-overlay"); if(!ov)return;
+  var u=auth.currentUser;
+  document.getElementById("settings-account").textContent=(u&&u.email)||"Conta conectada";
+  var perm=("Notification" in window)?Notification.permission:"unsupported";
+  document.getElementById("settings-notif-state").textContent=perm==="granted"?"Avisos permitidos neste navegador":perm==="denied"?"Avisos bloqueados nas permissões do navegador":perm==="unsupported"?"Este navegador não oferece notificações":"Avisos ainda não autorizados";
+  document.getElementById("settings-notif").textContent=perm==="granted"?"Permissão concedida":perm==="unsupported"?"Indisponível":"Ativar avisos";
+  document.getElementById("settings-notif").disabled=perm==="granted"||perm==="unsupported";
+  document.getElementById("settings-status").textContent="";
+  ov.classList.add("open");
+}
+function closeSettings(){document.getElementById("settings-overlay").classList.remove("open");}
+function deleteCurrentAccount(){
+  var user=auth.currentUser, status=document.getElementById("settings-status");
+  if(!user){status.textContent="Nenhuma conta conectada.";return;}
+  var email=user.email||"esta conta";
+  var ok=window.confirm("ATENÇÃO: deseja excluir definitivamente " + email + " e os dados financeiros associados? Esta ação não pode ser desfeita.");
+  if(!ok)return;
+  var typed=window.prompt('Para confirmar, digite EXCLUIR (em letras maiúsculas):');
+  if(typed!=="EXCLUIR"){status.textContent="Exclusão cancelada. Nenhum dado foi removido.";return;}
+  status.textContent="Verificando a sessão e preparando a exclusão…";
+  function reauthenticateIfNeeded(){
+    var providers=(user.providerData||[]).map(function(p){return p.providerId;});
+    if(providers.indexOf("password")>=0){
+      var pass=window.prompt("Por segurança, digite novamente a senha desta conta:");
+      if(pass===null) return Promise.reject({code:"app/cancelled"});
+      if(!pass) return Promise.reject({code:"app/missing-password"});
+      var cred=firebase.auth.EmailAuthProvider.credential(user.email,pass);
+      return user.reauthenticateWithCredential(cred);
+    }
+    if(providers.indexOf("google.com")>=0){
+      return user.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider());
+    }
+    return Promise.reject({code:"app/reauth-unavailable"});
+  }
+  // Reautentica antes de apagar qualquer dado, para não deixar a conta ativa sem seus registros.
+  reauthenticateIfNeeded().then(function(){
+    status.textContent="Excluindo dados financeiros…";
+    return db.collection("users").doc(user.uid).delete();
+  }).then(function(){ return user.delete(); }).then(function(){
+    try{localStorage.removeItem("plano-v2-"+user.uid);localStorage.removeItem("plano-palette-"+user.uid);}catch(e){}
+    status.textContent="Conta excluída.";
+  }).catch(function(err){
+    if(err&&err.code==="app/cancelled") status.textContent="Exclusão cancelada. Nenhum dado foi removido.";
+    else if(err&&err.code==="app/missing-password") status.textContent="Digite sua senha para confirmar a identidade. Nenhum dado foi removido.";
+    else if(err&&err.code==="app/reauth-unavailable") status.textContent="Este tipo de login exige que você saia, entre novamente e repita a exclusão. Nenhum dado foi removido.";
+    else if(err&&err.code==="auth/wrong-password") status.textContent="Senha incorreta. Nenhum dado foi removido.";
+    else status.textContent="Não foi possível concluir a exclusão: "+((err&&err.message)||"erro desconhecido");
+  });
+}
+
 function destroyDashboardCharts() {
   Object.keys(dashboardCharts).forEach(function(k){
     if (dashboardCharts[k]) { dashboardCharts[k].destroy(); dashboardCharts[k] = null; }
@@ -671,12 +828,15 @@ auth.onAuthStateChanged(function(user) {
   if (user) {
     currentUserUid = user.uid;
     updateProfileHeader(user);
+    loadPalette();
     document.getElementById("auth-screen").style.display = "none";
     document.getElementById("app-screen").style.display = "block";
     listenCloud(user.uid);
   } else {
     currentUserUid = null;
     updateProfileHeader(null);
+    closeSettings();
+    loadPalette();
     destroyDashboardCharts();
     if (unsubscribeSync) { unsubscribeSync(); unsubscribeSync = null; }
     S = createEmptyState();
@@ -764,6 +924,16 @@ $a("auth-google").addEventListener("click", function(){
 document.getElementById("logout-btn").addEventListener("click", function(){
   auth.signOut();
 });
+ document.getElementById("settings-open").addEventListener("click",openSettings);
+document.getElementById("settings-close").addEventListener("click",closeSettings);
+document.getElementById("settings-overlay").addEventListener("click",function(e){if(e.target===this)closeSettings();});
+document.getElementById("settings-delete").addEventListener("click",deleteCurrentAccount);
+document.getElementById("settings-notif").addEventListener("click",function(){
+  if(!("Notification" in window))return;
+  Notification.requestPermission().then(function(){openSettings();});
+});
+document.querySelectorAll("[data-palette-choice]").forEach(function(b){b.addEventListener("click",function(){applyPalette(this.dataset.paletteChoice);});});
+document.addEventListener("keydown",function(e){if(e.key==="Escape")closeSettings();});
 
 function onList(on) { var r = [], i; for (i = 1; i < on.length; i++) if (on[i]) r.push(i); return r; }
 function billPlan(b, ym, dias, tmd) {
@@ -1663,7 +1833,7 @@ document.addEventListener("change", function(e){
 document.addEventListener("click", function(e){
   var t = e.target.closest("[data-a]"); if (!t) return;
   var a = t.dataset.a, i = t.dataset.i;
-  if (a == "tab") { tab = +i; window.scrollTo(0, 0); }
+  if (a == "tab") { tab = +i; }
   else if (a == "pm" || a == "nm") {
     var p = S.ym.split("-"), d = new Date(+p[0], +p[1] - 1 + (a == "nm" ? 1 : -1), 1);
     S.ym = d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2);
