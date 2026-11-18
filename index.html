@@ -1406,7 +1406,7 @@ function createEmptyState() {
     ym: currentYM, tipoRenda: "diaria", dia: 0, dias: [1,2,3,4,5],
     valQuinzena: 0, diaQ1: 5, diaQ2: 20, valMes: 0, diaMes: 5,
     ini: {}, paid: {}, gp: {}, rp: {}, carry: false, ex: [], bills: [],
-    start: currentYM, ts: Date.now()
+    start: currentYM, paidAt: {}, separado: {}, movimentos: [], ts: Date.now()
   };
 }
 
@@ -1415,7 +1415,7 @@ function getKey() {
 }
 
 function fix() {
-  S.rp = S.rp || {}; S.au = S.au || {}; S.dw = S.dw || {}; S.real = S.real || {}; S.paid = S.paid || {}; S.gp = S.gp || {}; S.ini = S.ini || {}; S.rv = S.rv || {}; S.bdw = S.bdw || {}; S.movimentos = Array.isArray(S.movimentos) ? S.movimentos : [];
+  S.rp = S.rp || {}; S.au = S.au || {}; S.dw = S.dw || {}; S.real = S.real || {}; S.paid = S.paid || {}; S.paidAt = S.paidAt || {}; S.separado = S.separado || {}; S.gp = S.gp || {}; S.ini = S.ini || {}; S.rv = S.rv || {}; S.bdw = S.bdw || {}; S.movimentos = Array.isArray(S.movimentos) ? S.movimentos : [];
   if (!S.tipoRenda) S.tipoRenda = "diaria";
   if (S.dia === undefined) S.dia = 0;
   if (!Array.isArray(S.dias) || !S.dias.length) S.dias = [1,2,3,4,5];
@@ -1921,6 +1921,12 @@ function calc() {
   
   var exD = [], bD = [];
   for (d = 1; d <= N; d++) { exD[d] = []; bD[d] = []; }
+  function diaDoPagamento(chave, previsto) {
+    var data = (S.paidAt || {})[S.ym + chave];
+    if (!S.paid[S.ym + chave] || !data || data.slice(0,7) !== S.ym) return previsto;
+    var diaReal = Number(data.slice(8,10));
+    return diaReal >= 1 && diaReal <= N ? diaReal : previsto;
+  }
 
   L.forEach(function(b){
     var pl = billPlan(b, S.ym, dias, tmd), q;
@@ -1928,7 +1934,7 @@ function calc() {
     
     if (b.t == "dd") { 
       for (q = 1; q <= N; q++) {
-        if (pl.live[q]) bD[q].push({ id: b.id + "d" + q, n: b.n, a: b.a, t: "dd" });
+        if (pl.live[q]) { var keyDiaria = b.id + "d" + q; bD[diaDoPagamento(keyDiaria, q)].push({ id: keyDiaria, n: b.n, a: b.a, t: "dd" }); }
       }
       b.tt = pl.tw; tot += b.tt;
     }
@@ -1954,9 +1960,10 @@ function calc() {
     else { 
       tot += b.a; 
       if (b.custom) {
-        for (q = 1; q <= N; q++) if (b.on[q]) bD[q].push(b);
+        for (q = 1; q <= N; q++) if (b.on[q]) bD[diaDoPagamento(b.id, q)].push(b);
       } else {
-        bD[Math.min(b.d || 1, N)].push(b);
+        var diaPrevisto = Math.min(b.d || 1, N);
+        bD[diaDoPagamento(b.id, diaPrevisto)].push(b);
       }
     }
   });
@@ -1995,9 +2002,9 @@ function calc() {
   L.forEach(function(b){
     if (b.t !== "s") return;
     (b.weekOccurrences || []).forEach(function(w){
-      var d = w.d;
+      var pid = b.id + "w" + w.key, d = diaDoPagamento(pid, w.d);
       weeklyEvents[d] = weeklyEvents[d] || [];
-      weeklyEvents[d].push({ n: b.n, a: b.a, in: 0, weekly: true, pid: b.id + "w" + w.key });
+      weeklyEvents[d].push({ n: b.n, a: b.a, in: 0, weekly: true, pid: pid });
     });
   });
   var bal0 = ini0(), mim0v = mim0();
@@ -2636,6 +2643,7 @@ function vSaldo() {
   return h;
 }
 
+function dataLocalISO() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
 function parseMoney(v) { var z = String(v == null ? "" : v).trim().replace(/\s/g, ""); if (z.indexOf(",") >= 0) z = z.replace(/\./g, "").replace(",", "."); return Number(z); }
 function escHTML(v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
 function registrarMovimento(tipo, descricao, valor, data, ref) {
@@ -2684,7 +2692,7 @@ function sincronizarMovimentosPagos(antes, depois) {
     if (!detalhe || Math.abs(detalhe.valor) < 0.005) return;
     var valor = depois[key] ? detalhe.valor : -detalhe.valor;
     registrarMovimento(depois[key] ? detalhe.tipo : "estorno", depois[key] ? detalhe.desc : "Estorno — " + detalhe.desc,
-      valor, new Date().toISOString().slice(0,10), key + (depois[key] ? "#pago#" : "#estorno#") + Date.now());
+      valor, (depois[key] && S.paidAt && S.paidAt[key]) ? S.paidAt[key] : dataLocalISO(), key + (depois[key] ? "#pago#" : "#estorno#") + Date.now());
   });
 }
 
@@ -2739,6 +2747,8 @@ function vCalendario() {
          '<span class="chk">' + (dn2 ? "✓" : "") + '</span>' +
          '<span class="grow"><b>Diária de Trabalho</b><small>Entra ' + R(ic("dia")) + '</small></span>' +
          '</button>';
+    var parteMarcada = !!((S.separado || {})[S.ym + "d" + selDay]);
+    h += '<button class="row' + (parteMarcada ? " done" : "") + '" data-a="separar" data-i="' + selDay + '" style="margin-top:6px;"><span class="chk">' + (parteMarcada ? "✓" : "") + '</span><span class="grow"><b>Minha parte do dia</b><small>' + (parteMarcada ? "Você marcou que separou/recebeu sua parte." : "Marcar quando separar ou receber o dinheiro que fica pra você: " + R(Math.max(0, ic("dia") - c.g))) + '</small></span></button>';
   }
   
   if (selInfo.ev.length === 0) {
@@ -2853,7 +2863,25 @@ document.addEventListener("click", function(e){
   }
   else if (a == "selday") selDay = +i;
   else if (a == "tvenc") VOPEN = !VOPEN;
-  else if (a == "tog") { var k = S.ym + i; S.paid[k] = !S.paid[k]; }
+  else if (a == "tog") {
+    var k = S.ym + i, vaiMarcar = !S.paid[k], rawKey = i, detalhe = detalhePagamento(k);
+    S.paidAt = S.paidAt || {};
+    if (vaiMarcar && detalhe && detalhe.tipo === "saida") {
+      var hojeISO = dataLocalISO();
+      var dataPg = prompt("Qual foi a data REAL em que você pagou? (AAAA-MM-DD)", hojeISO);
+      if (dataPg === null) return;
+      var dtCheck = new Date(dataPg + "T12:00:00");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dataPg) || isNaN(dtCheck.getTime()) || dtCheck.getFullYear()+"-"+("0"+(dtCheck.getMonth()+1)).slice(-2)+"-"+("0"+dtCheck.getDate()).slice(-2) !== dataPg) { alert("Data inválida. Use uma data real no formato AAAA-MM-DD."); return; }
+      S.paidAt[k] = dataPg;
+    }
+    if (vaiMarcar) S.paid[k] = true;
+    else { delete S.paid[k]; delete S.paidAt[k]; }
+  }
+  else if (a == "separar") {
+    S.separado = S.separado || {};
+    var sk = S.ym + "d" + i;
+    if (S.separado[sk]) delete S.separado[sk]; else S.separado[sk] = true;
+  }
   else if (a == "movin" || a == "movout") {
     var desc = prompt("Descrição da movimentação:", a === "movin" ? "Entrada no Pote" : "Saída do Pote");
     if (desc === null) return;
@@ -2861,7 +2889,7 @@ document.addEventListener("click", function(e){
     if (raw === null) return;
     var val = parseMoney(raw);
     if (!isFinite(val) || val <= 0) { alert("Informe um valor maior que zero."); return; }
-    registrarMovimento(a === "movin" ? "entrada" : "saida", desc.trim() || (a === "movin" ? "Entrada" : "Saída"), a === "movin" ? val : -val, new Date().toISOString().slice(0,10));
+    registrarMovimento(a === "movin" ? "entrada" : "saida", desc.trim() || (a === "movin" ? "Entrada" : "Saída"), a === "movin" ? val : -val, dataLocalISO());
   }
   else if (a == "movset") {
     var atualMov = (S.movimentos || []).reduce(function(t,m){ return t + (Number(m.valor)||0); }, 0);
@@ -2870,7 +2898,7 @@ document.addEventListener("click", function(e){
     var novoSaldo = parseMoney(rawSaldo);
     if (!isFinite(novoSaldo) || novoSaldo < 0) { alert("Informe um saldo válido, igual ou maior que zero."); return; }
     var diferenca = novoSaldo - atualMov;
-    if (Math.abs(diferenca) > 0.004) registrarMovimento("ajuste", "Correção do saldo real", diferenca, new Date().toISOString().slice(0,10));
+    if (Math.abs(diferenca) > 0.004) registrarMovimento("ajuste", "Correção do saldo real", diferenca, dataLocalISO());
   }
   else if (a == "wd") {
     var cur = ic("dias").slice(), x = cur.indexOf(+i);
