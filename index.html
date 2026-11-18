@@ -1418,7 +1418,7 @@ function fix() {
   S.rp = S.rp || {}; S.au = S.au || {}; S.dw = S.dw || {}; S.real = S.real || {}; S.paid = S.paid || {}; S.gp = S.gp || {}; S.ini = S.ini || {}; S.rv = S.rv || {}; S.bdw = S.bdw || {};
   if (!S.tipoRenda) S.tipoRenda = "diaria";
   if (S.dia === undefined) S.dia = 0;
-  if (!S.dias) S.dias = [1,2,3,4,5];
+  if (!Array.isArray(S.dias) || !S.dias.length) S.dias = [1,2,3,4,5];
   if (S.valQuinzena === undefined) S.valQuinzena = 0;
   if (S.diaQ1 === undefined) S.diaQ1 = 5;
   if (S.diaQ2 === undefined) S.diaQ2 = 20;
@@ -1472,10 +1472,10 @@ function listenCloud(uid) {
   if (unsubscribeSync) unsubscribeSync();
   setSync("⏳ Carregando seus dados…");
   
-  var localData = null;
+  var localData = null, localTs = 0, hasLocalState = false;
   try { localData = localStorage.getItem(getKey()); } catch(e){}
   if (localData) {
-    try { S = JSON.parse(localData); fix(); } catch(e){}
+    try { S = JSON.parse(localData); fix(); localTs = +S.ts || 0; hasLocalState = true; } catch(e){}
   } else {
     S = createEmptyState(); fix();
   }
@@ -1484,13 +1484,17 @@ function listenCloud(uid) {
     if (doc.exists) {
       var data = doc.data();
       try {
-        var rem = JSON.parse(data.json);
-        if (rem) {
-          S = rem; fix(); CC = {}; MC = {}; saveLocal(); draw();
+        var rem = JSON.parse(data.json), remoteTs = +data.ts || (+rem.ts || 0);
+        if (rem && (!hasLocalState || remoteTs >= (+S.ts || localTs))) {
+          S = rem; fix(); CC = {}; MC = {}; saveLocal(); draw(); hasLocalState = true;
           setSync("☁️ Dados atualizados da nuvem às " + hora());
+        } else if (rem && (+S.ts || localTs) > remoteTs) {
+          cloudPush(); draw();
+          setSync("☁️ Enviando a versão local mais recente…");
         }
       } catch(e){ draw(); }
     } else {
+      hasLocalState = true;
       cloudPush();
       draw();
     }
@@ -1653,7 +1657,7 @@ function renderDashboardCharts(c, rs) {
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{legend:{position:"bottom",labels:{usePointStyle:true,boxWidth:7,padding:18}},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+": "+currency(ctx.parsed.y);}}}},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:10}},y:{grid:{color:gridColor},ticks:{callback:function(v){return "R$ "+Number(v).toLocaleString("pt-BR");}}}}}
   });
   var expenseItems = (c.L||[]).map(function(b){
-    var value = b.t === "dd" ? (b.tt||0) : (b.t === "s" ? (b.tw||0) : (b.a||0));
+    var value = b.t === "dd" ? (b.tt||0) : (b.t === "s" ? (b.monthTotal||0) : (b.a||0));
     return {name:b.n||"Conta",value:value};
   }).filter(function(x){return x.value>0;}).sort(function(a,b){return b.value-a.value;});
   var expenseLabels = expenseItems.slice(0,6).map(function(x){return x.name;});
@@ -1790,26 +1794,55 @@ document.addEventListener("keydown",function(e){if(e.key==="Escape")closeSetting
 function onList(on) { var r = [], i; for (i = 1; i < on.length; i++) if (on[i]) r.push(i); return r; }
 function billPlan(b, ym, dias, tmd) {
   var pq = ym.split("-"), Y = +pq[0], M = +pq[1], N = new Date(Y, M, 0).getDate(), fdw = new Date(Y, M-1, 1).getDay(),
-      cu = b.t === "m" ? null : (b.dm || {})[ym], custom = !!cu, sel = [], on = [], live = [], per = [], q, wkc = {}, tw = 0, cnt = 0, wl = {}, nk;
-  if (cu) cu.forEach(function(d){ if (d >= 1 && d <= N) on[d] = true; });
+      cu = b.t === "m" ? null : (b.dm || {})[ym], custom = Array.isArray(cu) && cu.length > 0, sel = [], on = [], live = [], per = [],
+      q, groups = {}, weeks = [], tw = 0, cnt = 0, wl = 0, monthTotal = 0, nk;
+  if (custom) cu.forEach(function(d){ if (Number.isInteger(+d) && d >= 1 && d <= N) on[+d] = true; });
   else {
     sel = b.t === "s" ? ((b.wd && b.wd.length) ? b.wd : dias) : (b.wd || [1,2,3,4,5]);
     if (b.t === "m") {
-      if (b.d) on[Math.min(b.d, N)] = true;
+      if (b.d) on[Math.min(Math.max(1, Math.floor(+b.d)), N)] = true;
     } else {
       for (q = 1; q <= N; q++) if (sel.indexOf(new Date(Y, M-1, q).getDay()) >= 0) on[q] = true;
     }
   }
-  for (q = 1; q <= N; q++) if (on[q]) { nk = Math.floor((q - 1 + fdw) / 7); wkc[nk] = (wkc[nk] || 0) + 1; }
-  for (q = 1; q <= N; q++) {
-    if (!on[q]) continue;
-    nk = Math.floor((q - 1 + fdw) / 7);
-    if (b.t === "s") per[q] = custom ? b.a / (wkc[nk] || 1) : b.a / (sel.length || 1);
-    else per[q] = b.a;
-    if (b.t === "s" && tmd && q < tmd) continue; // semana que já passou: ignora
-    live[q] = true; cnt++; tw += per[q]; wl[nk] = 1;
+
+  if (b.t === "s") {
+    // Uma ocorrência por semana do calendário. O vencimento é o último dia
+    // selecionado daquela semana; o valor integral é reservado ao longo dos
+    // dias selecionados restantes até esse vencimento.
+    for (q = 1; q <= N; q++) if (on[q]) {
+      nk = Math.floor((q - 1 + fdw) / 7);
+      var g = groups[nk] || (groups[nk] = { key: nk, d0: q, d: q, days: [] });
+      g.d0 = Math.min(g.d0, q); g.d = Math.max(g.d, q); g.days.push(q);
+    }
+    Object.keys(groups).map(function(k){ return groups[k]; }).sort(function(a,b){ return a.key-b.key; }).forEach(function(g){
+      var dueDay = g.d;
+      if (!custom && sel.length) {
+        var weekStart = g.d0 - new Date(Y, M-1, g.d0).getDay();
+        var lastWeekday = Math.max.apply(null, sel);
+        dueDay = weekStart + lastWeekday;
+      }
+      // Se o vencimento semanal cai no mês seguinte, a ocorrência pertence
+      // ao mês seguinte e não deve ser cobrada duas vezes.
+      if (dueDay < 1 || dueDay > N) return;
+      var remaining = g.days.filter(function(day){ return !tmd || day >= tmd; });
+      var occurrence = { key: g.key, d0: g.d0, d: dueDay, days: g.days.slice(), amount: +b.a || 0 };
+      weeks.push(occurrence);
+      monthTotal += (+b.a || 0);
+      if (remaining.length && (!tmd || dueDay >= tmd)) {
+        wl++;
+        remaining.forEach(function(day){
+          live[day] = true;
+          per[day] = (+b.a || 0) / remaining.length;
+          tw += per[day]; cnt++;
+        });
+      }
+    });
+  } else {
+    for (q = 1; q <= N; q++) if (on[q]) { live[q] = true; per[q] = +b.a || 0; cnt++; tw += per[q]; }
   }
-  return { on: on, live: live, per: per, sel: sel, custom: custom, cnt: cnt, tw: tw, wl: Object.keys(wl).length };
+  return { on: on, live: live, per: per, sel: sel, custom: custom, cnt: cnt, tw: tw,
+           wl: wl, weeks: weeks, monthTotal: monthTotal };
 }
 function selNames(sel) {
   return [1,2,3,4,5,6,0].filter(function(i){ return sel.indexOf(i) >= 0; }).map(function(i){ return WN[i]; }).join(", ");
@@ -1850,16 +1883,25 @@ function prevYM(ym) {
 function carry(ym) {
   if (ym <= S.start) return { p: 0, m: 0 };
   if (CC[ym]) return CC[ym];
-  var o = S.ym; S.ym = prevYM(ym);
-  var s = serie(), l = s[s.length-1];
+  var o = S.ym, pv = prevYM(ym), prevCalc, prevRS, l, total, pote, unpaid;
+  S.ym = pv;
+  prevCalc = calc();
+  l = prevCalc.days[prevCalc.days.length-1];
+  prevRS = RS(prevCalc);
   S.ym = o;
-  return (CC[ym] = { p: l ? l.pote : 0, m: l ? l.mim : 0 });
+  // Carrega apenas o saldo líquido depois das contas do mês anterior, incluindo
+  // as que venceram e ainda não foram marcadas como pagas. Assim uma dívida
+  // pendente não aparece como dinheiro livre no mês seguinte.
+  unpaid = Math.max(0, prevRS.tT - prevRS.pg);
+  total = mao(ym) - unpaid;
+  pote = Math.min(Math.max(0, l ? l.pote : 0), Math.max(0, total));
+  return (CC[ym] = { p: pote, m: total - pote });
 }
 
 function XS() { return S.ex.filter(function(x){ return act(x, S.ym); }).map(function(x){ return eff(x, S.ym); }); }
 function XT() { return XS(); }
 function ini0() { return ic("carry") ? carry(S.ym).p : (+S.ini[S.ym] || 0); }
-function mim0() { return ic("carry") ? carry(S.ym).m : Math.max(0, mao(S.ym) - ini0()); }
+function mim0() { return ic("carry") ? carry(S.ym).m : (mao(S.ym) - ini0()); }
 
 function calc() {
   var p = S.ym.split("-"), Y = +p[0], M = +p[1], N = new Date(Y, M, 0).getDate(), wd = [], w = 0, wdp = [], wP = 0, d,
@@ -1890,9 +1932,24 @@ function calc() {
       }
       b.tt = pl.tw; tot += b.tt;
     }
-    else if (b.t == "s") { 
-      for (q = 1; q <= N; q++) if (pl.live[q]) wc[q] += pl.per[q]; 
-      b.tw = pl.tw; tot += b.tw; ud += pl.tw; 
+    else if (b.t == "s") {
+      for (q = 1; q <= N; q++) if (pl.live[q]) wc[q] += pl.per[q];
+      b.tw = pl.tw;
+      b.monthTotal = pl.monthTotal;
+      b.weekOccurrences = pl.weeks;
+      S.weeklyPaymentMigration = S.weeklyPaymentMigration || {};
+      var migrationKey = S.ym + b.id;
+      if (!S.weeklyPaymentMigration[migrationKey]) {
+        // Versões anteriores tinham uma única caixa por mês para a conta semanal.
+        // Se ela estava marcada, migra o estado para todas as semanas daquele mês.
+        if (S.paid[migrationKey]) {
+          b.weekOccurrences.forEach(function(w){ S.paid[S.ym + b.id + "w" + w.key] = true; });
+        }
+        delete S.paid[migrationKey];
+        S.weeklyPaymentMigration[migrationKey] = true;
+      }
+      tot += b.monthTotal;
+      ud += pl.tw;
     }
     else { 
       tot += b.a; 
@@ -1915,7 +1972,9 @@ function calc() {
     lumps.push({ d: Math.min(ic("diaQ2"), N), amt: ic("valQuinzena"), id: "q2" });
   } else if (tipo === "mes") lumps.push({ d: Math.min(ic("diaMes"), N), amt: ic("valMes"), id: "mes1" });
 
-  var td = new Date(), t0 = (td.getFullYear() == Y && td.getMonth() + 1 == M) ? td.getDate() : 0,
+  var td = new Date(), isThisMonth = (td.getFullYear() == Y && td.getMonth() + 1 == M),
+      isPastMonth = S.ym < currentYM,
+      t0 = isThisMonth ? td.getDate() : (isPastMonth ? N + 1 : 0),
       miss = [], missN = 0;
   if (t0) {
     for (d = 1; d < t0; d++) if (tipo === "diaria" && wd[d] && !S.paid[S.ym + "d" + d]) { miss[d] = true; missN++; }
@@ -1925,8 +1984,22 @@ function calc() {
   lumps.forEach(function(e){ if (!e.miss && e.amt > 0) { var o = lumpDays[e.d] || (lumpDays[e.d] = { d: e.d, amt: 0, ids: [] }); o.amt += e.amt; o.ids.push(e.id); } });
   var lumpList = Object.keys(lumpDays).map(function(k){ return lumpDays[k]; }).sort(function(a, b){ return a.d - b.d; });
 
-  X.forEach(function(x){ exD[Math.min(x.d, N)].push(x); });
+  X.forEach(function(x){
+    var xd = Math.min(Math.max(1, Math.floor(+x.d || 1)), N);
+    var alreadyDue = t0 && xd < t0;
+    if (alreadyDue && !S.paid[S.ym + x.id]) return;
+    exD[xd].push(x);
+  });
   var rl = (S.real || {})[S.ym], rd = rl ? Math.min(Math.max(1, +rl.d || 1), N) : 0;
+  var weeklyEvents = [];
+  L.forEach(function(b){
+    if (b.t !== "s") return;
+    (b.weekOccurrences || []).forEach(function(w){
+      var d = w.d;
+      weeklyEvents[d] = weeklyEvents[d] || [];
+      weeklyEvents[d].push({ n: b.n, a: b.a, in: 0, weekly: true, pid: b.id + "w" + w.key });
+    });
+  });
   var bal0 = ini0(), mim0v = mim0();
 
   function pior(d0, dEnd, bal) {
@@ -1972,6 +2045,7 @@ function calc() {
         }
       }
       exD[d].forEach(function(x){ bal += x.a; if (detail) ev.push({ n: x.n, a: x.a, in: 1 }); });
+      (weeklyEvents[d] || []).forEach(function(w){ ev.push(w); });
       bD[d].forEach(function(b){
         var before = bal, sh = 0;
         bal -= b.a;
@@ -2045,7 +2119,7 @@ function RS(c) {
   else if (ic("tipoRenda") === "quinzena") iT = ic("valQuinzena") * 2;
   else if (ic("tipoRenda") === "mes") iT = ic("valMes");
 
-  LT.forEach(function(b){ tT += b.t == "dd" ? b.tt : (b.t == "s" ? b.tw : b.a); });
+  LT.forEach(function(b){ tT += b.t == "dd" ? b.tt : (b.t == "s" ? (b.monthTotal || 0) : b.a); });
   XTT.forEach(function(x){ iT += x.a; });
 
   if (ic("tipoRenda") === "diaria") {
@@ -2068,12 +2142,10 @@ function RS(c) {
   LT.forEach(function(b){
     if (b.t == "dd") { var q1; for (q1 = 1; q1 <= c.N; q1++) if (b.live[q1] && S.paid[S.ym + b.id + "d" + q1]) pg += b.a; }
     else if (b.t == "s") {
-      var q3;
-      for (q3 = 1; q3 <= c.N && q3 <= lim; q3++) {
-        if (!b.live[q3]) continue;
-        if (ic("tipoRenda") === "diaria" && wdOn(q3) && !S.paid[S.ym + "d" + q3]) continue;
-        pg += b.per[q3];
-      }
+      (b.weekOccurrences || []).forEach(function(w){
+        var weeklyKey = S.ym + b.id + "w" + w.key;
+        if (S.paid[weeklyKey]) pg += b.a;
+      });
     }
     else if (S.paid[S.ym + b.id]) pg += b.a;
   });
@@ -2099,10 +2171,13 @@ function vMes() {
     var hojeD = td.getDate();
     var avisosHoje = [];
     c.L.forEach(function(b){
-      if (b.t === "dd") { 
-        if (b.on[hojeD] && !S.paid[S.ym + b.id + "d" + hojeD]) avisosHoje.push("Gasto de hoje: " + b.n + " (" + R(b.a) + ")"); 
-      }
-      else if (b.t !== "s" && Math.min(b.d||1, c.N) === hojeD && !S.paid[S.ym + b.id]) avisosHoje.push("Conta a vencer hoje: " + b.n + " (" + R(b.a) + ")");
+      if (b.t === "dd") {
+        if (b.on[hojeD] && !S.paid[S.ym + b.id + "d" + hojeD]) avisosHoje.push("Gasto de hoje: " + b.n + " (" + R(b.a) + ")");
+      } else if (b.t === "s") {
+        (b.weekOccurrences || []).forEach(function(w){
+          if (w.d === hojeD && !S.paid[S.ym + b.id + "w" + w.key]) avisosHoje.push("Pagamento semanal vence hoje: " + b.n + " (" + R(b.a) + ")");
+        });
+      } else if (Math.min(b.d||1, c.N) === hojeD && !S.paid[S.ym + b.id]) avisosHoje.push("Conta a vencer hoje: " + b.n + " (" + R(b.a) + ")");
     });
     XS().forEach(function(x){
       if (x.d === hojeD) avisosHoje.push("Renda a cair hoje: " + x.n + " (" + R(x.a) + ")");
@@ -2112,7 +2187,11 @@ function vMes() {
       c.L.forEach(function(b){
         if (b.t === "dd") {
           if (b.on[dd2] && !S.paid[S.ym + b.id + "d" + dd2]) avisosHoje.push((off === 1 ? "Amanhã" : "Em " + off + " dias") + ": " + b.n + " (" + R(b.a) + ")");
-        } else if (b.t !== "s" && Math.min(b.d || 1, c.N) === dd2 && !S.paid[S.ym + b.id]) {
+        } else if (b.t === "s") {
+          (b.weekOccurrences || []).forEach(function(w){
+            if (w.d === dd2 && !S.paid[S.ym + b.id + "w" + w.key]) avisosHoje.push((off === 1 ? "Amanhã" : "Em " + off + " dias") + ": " + b.n + " vence (" + R(b.a) + ")");
+          });
+        } else if (Math.min(b.d || 1, c.N) === dd2 && !S.paid[S.ym + b.id]) {
           avisosHoje.push((off === 1 ? "Amanhã" : "Em " + off + " dias") + ": " + b.n + " vence (" + R(b.a) + ")");
         }
       });
@@ -2130,7 +2209,7 @@ function vMes() {
   var sobraEmMaosLiquida = mc + en - pg;
 
   h += '<div class="cards">' +
-       '<div class="cd"><small>Entra no mês</small><b>' + R(iT) + '</b></div>' +
+       '<div class="cd"><small>Receitas previstas</small><b>' + R(iT) + '</b></div>' +
        '<div class="cd"><small>Contas do mês</small><b>' + R(tT) + '</b></div>' +
        '<div class="cd"><small>Já paguei</small><b style="color:var(--ok)">' + R(pg) + '</b></div>' +
        '<div class="cd"><small>Falta pagar</small><b style="color:var(--bad)">' + R(fl) + '</b></div>' +
@@ -2357,8 +2436,13 @@ function marcarConteudo() {
   var it = [];
   c.L.forEach(function(b){
     if (b.t == "dd") return;
-    if (b.t == "s") it.push({ d: 99, n: b.n, a: b.tw, s: R(b.a) + " por semana · " + (b.wl === 0 ? "nenhuma semana falta neste mês" : "faltam " + b.wl + (b.wl === 1 ? " semana" : " semanas")), id: b.id });
-    else it.push({ d: Math.min(b.d || 1, c.N), n: b.n, a: b.a, id: b.id });
+    if (b.t == "s") {
+      (b.weekOccurrences || []).forEach(function(w){
+        var dueDate = new Date(c.Y, c.M - 1, w.d);
+        it.push({ d: w.d, n: b.n, a: b.a, id: b.id + "w" + w.key,
+          s: "Pagamento semanal · vence " + WN[dueDate.getDay()] + " " + w.d });
+      });
+    } else it.push({ d: Math.min(b.d || 1, c.N), n: b.n, a: b.a, id: b.id });
   });
   XS().forEach(function(x){ it.push({ d: Math.min(x.d, c.N), n: x.n, a: x.a, id: x.id, x: 1 }); });
   it.sort(function(a, b){ return a.d - b.d; });
@@ -2407,12 +2491,14 @@ function billDaysUI(b) {
   for (q = 1; q <= N; q++) o += '<button class="' + (pl.on[q] ? "on" : "") + (isS && tmd && q < tmd ? " pass" : "") + '" data-a="bdt" data-i="' + b.id + '" data-w="' + q + '">' + q + '</button>';
   o += '</div>';
   if (isS) {
-    o += '<div class="note" style="margin:6px 0 0">' + (pl.custom ? 'Dias escolhidos só pra este mês: o valor da semana (' + R(b.a) + ') é dividido entre os dias marcados de cada semana.'
-         : R(b.a) + ' por semana ÷ ' + nn + (nn === 1 ? ' dia' : ' dias') + ' = <b>' + R(b.a / nn) + '</b> em cada dia marcado. Por padrão uso os seus dias de trabalho.') + '</div>';
+    o += '<div class="note" style="margin:6px 0 0">' +
+         R(b.a) + ' é o valor integral de cada semana. O planejamento reserva esse valor em partes iguais nos dias selecionados daquela semana; o vencimento é o último dia selecionado. ' +
+         (pl.custom ? 'Este calendário usa dias escolhidos só para este mês.' : 'Por padrão, uso os dias selecionados na sua rotina.') +
+         ' Marque cada semana como paga somente depois de fazer o pagamento.</div>';
     o += '<div class="note" style="margin:4px 0 0">' + (tmd
          ? (pl.wl === 0 ? 'Neste mês <b>não falta nenhuma semana</b>: nada a separar. Dias que já passaram ficam de fora.'
-                        : 'Faltam <b>' + pl.wl + (pl.wl === 1 ? ' semana' : ' semanas') + '</b> neste mês (' + pl.cnt + (pl.cnt === 1 ? ' dia' : ' dias') + '), total <b>' + R(pl.tw) + '</b>. Dias que já passaram ficam de fora (esmaecidos).')
-         : 'Neste mês: <b>' + pl.wl + (pl.wl === 1 ? ' semana' : ' semanas') + '</b>, total <b>' + R(pl.tw) + '</b>.') + '</div>';
+                        : 'Faltam <b>' + pl.wl + (pl.wl === 1 ? ' semana' : ' semanas') + '</b> com reserva neste mês (' + pl.cnt + (pl.cnt === 1 ? ' dia' : ' dias') + ' restantes), reserva pendente <b>' + R(pl.tw) + '</b>. O total previsto do mês é <b>' + R(pl.monthTotal) + '</b>.')
+         : 'Neste mês: <b>' + pl.weeks.length + (pl.weeks.length === 1 ? ' pagamento semanal' : ' pagamentos semanais') + '</b>, total previsto <b>' + R(pl.monthTotal) + '</b>.') + '</div>';
   } else if (isM) {
     o += '<div class="note" style="margin:6px 0 0">Vencimento no dia <b>' + (b.d || 1) + '</b>. Toque no calendário acima para mudar o dia.</div>';
   } else {
@@ -2596,8 +2682,8 @@ function vCalendario() {
     selInfo.ev.forEach(function(e){
       var itemBill = c.L.filter(function(b){ return b.n == e.n; })[0];
       var itemInc = XS().filter(function(x){ return x.n == e.n; })[0];
-      var itemId = itemBill ? itemBill.id : (itemInc ? itemInc.id : "");
-      if (itemBill && itemBill.t === "dd") itemId = itemBill.id + "d" + selDay;
+      var itemId = e.pid || (itemBill ? itemBill.id : (itemInc ? itemInc.id : ""));
+      if (!e.pid && itemBill && itemBill.t === "dd") itemId = itemBill.id + "d" + selDay;
       var done = itemId ? S.paid[S.ym + itemId] : false;
       
       if (itemId) {
@@ -2656,7 +2742,7 @@ function draw() {
 document.addEventListener("change", function(e){
   var t = e.target, sc = t.dataset.s; if (!sc) return;
   var f = t.dataset.f, v = t.value;
-  if (sc == "g") { S.gp = S.gp || {}; S.gp[S.ym + "d" + t.dataset.i] = parseFloat(v) || 0; }
+  if (sc == "g") { S.gp = S.gp || {}; S.gp[S.ym + "d" + t.dataset.i] = Math.max(0, parseFloat(v) || 0); }
   else if (sc == "r") {
     S.real = S.real || {};
     var rr = S.real[S.ym] || (S.real[S.ym] = { d: 1, pote: null, mim: null });
@@ -2668,12 +2754,12 @@ document.addEventListener("change", function(e){
   else if (sc == "c") {
     if (f == "tipoRenda") setC("tipoRenda", v);
     else if (f == "ini") S.ini[S.ym] = parseFloat(v) || 0;
-    else if (f == "dia") setC("dia", parseFloat(v) || 0);
-    else if (f == "valQuinzena") setC("valQuinzena", parseFloat(v) || 0);
-    else if (f == "diaQ1") setC("diaQ1", parseInt(v) || 1);
-    else if (f == "diaQ2") setC("diaQ2", parseInt(v) || 15);
-    else if (f == "valMes") setC("valMes", parseFloat(v) || 0);
-    else if (f == "diaMes") setC("diaMes", parseInt(v) || 5);
+    else if (f == "dia") setC("dia", Math.max(0, parseFloat(v) || 0));
+    else if (f == "valQuinzena") setC("valQuinzena", Math.max(0, parseFloat(v) || 0));
+    else if (f == "diaQ1") setC("diaQ1", Math.min(31, Math.max(1, Math.floor(Number(v) || 1))));
+    else if (f == "diaQ2") setC("diaQ2", Math.min(31, Math.max(1, Math.floor(Number(v) || 15))));
+    else if (f == "valMes") setC("valMes", Math.max(0, parseFloat(v) || 0));
+    else if (f == "diaMes") setC("diaMes", Math.min(31, Math.max(1, Math.floor(Number(v) || 5))));
   }
   else {
     var o = (sc == "b" ? S.bills : S.ex).filter(function(x){ return x.id == t.dataset.i; })[0];
@@ -2681,7 +2767,7 @@ document.addEventListener("change", function(e){
       if (f == "f") { if (v && v < S.ym) v = S.ym; o.f = v; }
       else {
         o.v = o.v || {}; o.v[S.ym] = o.v[S.ym] || {};
-        o.v[S.ym][f] = (f == "a" || f == "d") ? (parseFloat(v) || 0) : v;
+        o.v[S.ym][f] = f == "a" ? Math.max(0, parseFloat(v) || 0) : (f == "d" ? Math.min(31, Math.max(1, Math.floor(Number(v) || 1))) : v);
         if (f == "t" && v == "m" && !o.d) o.d = 1;
         if (f == "t" && v == "dd") o.v[S.ym].wd = [];
       }
@@ -2702,7 +2788,13 @@ document.addEventListener("click", function(e){
   else if (a == "selday") selDay = +i;
   else if (a == "tvenc") VOPEN = !VOPEN;
   else if (a == "tog") { var k = S.ym + i; S.paid[k] = !S.paid[k]; }
-  else if (a == "wd") { var cur = ic("dias").slice(), x = cur.indexOf(+i); if (x < 0) cur.push(+i); else cur.splice(x, 1); setC("dias", cur); }
+  else if (a == "wd") {
+    var cur = ic("dias").slice(), x = cur.indexOf(+i);
+    if (x < 0) cur.push(+i);
+    else if (cur.length > 1) cur.splice(x, 1);
+    else { alert("Mantenha pelo menos um dia selecionado para calcular a rotina semanal."); return; }
+    setC("dias", cur);
+  }
   else if (a == "rclr") { delete (S.real || {})[S.ym]; }
   else if (a == "bkgen") { var bk = document.getElementById("bk"); if (bk) { bk.value = JSON.stringify(S); bk.focus(); bk.select(); try { document.execCommand("copy"); } catch(e2){} } return; }
   else if (a == "bkrst") {
