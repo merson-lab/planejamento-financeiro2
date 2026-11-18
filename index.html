@@ -301,7 +301,7 @@ button:active { transform:scale(.985); }
   font-synthesis:none;
   text-rendering:optimizeLegibility;
 }
-html,body { width:100%; min-width:0; min-height:100%; overflow-x:hidden; }
+html,body { width:100%; min-width:0; min-height:100%; overflow-x:clip; }
 html { background:#071426; }
 body {
   width:100%; max-width:none; min-height:100svh;
@@ -423,14 +423,39 @@ button { touch-action:manipulation; }
 }
 
 
-/* Navegação persistente: as abas acompanham a rolagem sem cobrir o conteúdo */
+/* Barra de navegação fixa no rodapé: permanece acessível durante toda a rolagem.
+   O posicionamento fixed evita as limitações de sticky em Safari/iOS e em contêineres com overflow. */
+body { padding-bottom:calc(112px + env(safe-area-inset-bottom,0px)) !important; }
 #tabs.tabs {
-  position:sticky; top:env(safe-area-inset-top,0px); z-index:80;
-  margin-top:12px; padding:7px; backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
-  box-shadow:0 12px 28px rgba(0,0,0,.22);
-  scroll-margin-top:12px;
+  position:fixed !important;
+  top:auto !important;
+  bottom:calc(12px + env(safe-area-inset-bottom,0px)) !important;
+  left:50% !important;
+  transform:translateX(-50%);
+  z-index:999 !important;
+  width:min(760px,calc(100% - 28px));
+  margin:0 !important;
+  padding:7px;
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:6px;
+  overflow:visible;
+  border:1px solid rgba(116,158,211,.32);
+  border-radius:18px;
+  background:rgba(8,24,44,.94);
+  box-shadow:0 12px 34px rgba(0,0,0,.42),0 2px 12px rgba(45,112,190,.14);
+  backdrop-filter:blur(22px) saturate(145%);
+  -webkit-backdrop-filter:blur(22px) saturate(145%);
 }
-#tabs.tabs button { min-height:42px; }
+#tabs.tabs button { min-width:0; min-height:46px; width:100%; padding:10px 5px; white-space:nowrap; }
+@media(max-width:420px) {
+  #tabs.tabs { width:calc(100% - 16px); bottom:calc(8px + env(safe-area-inset-bottom,0px)) !important; gap:3px; padding:5px; border-radius:15px; }
+  #tabs.tabs button { min-height:44px; padding:9px 1px; font-size:clamp(9px,2.7vw,11px); }
+}
+@media(min-width:761px) {
+  body { padding-bottom:120px !important; }
+  #tabs.tabs { bottom:20px !important; }
+}
 .settings-button {
   width:42px;height:42px;display:grid;place-items:center;border-radius:13px;
   border:1px solid #34577e;background:#102541;color:#d9edff;font-size:21px;
