@@ -423,38 +423,43 @@ button { touch-action:manipulation; }
 }
 
 
-/* Barra de navegação fixa no rodapé: permanece acessível durante toda a rolagem.
-   O posicionamento fixed evita as limitações de sticky em Safari/iOS e em contêineres com overflow. */
-body { padding-bottom:calc(112px + env(safe-area-inset-bottom,0px)) !important; }
+/* Navegação inferior fixa, encostada na borda da janela em todos os dispositivos. */
+body { padding-bottom:calc(104px + env(safe-area-inset-bottom,0px)) !important; }
 #tabs.tabs {
   position:fixed !important;
   top:auto !important;
-  bottom:calc(12px + env(safe-area-inset-bottom,0px)) !important;
+  right:auto !important;
+  bottom:0 !important;
   left:50% !important;
   transform:translateX(-50%);
-  z-index:999 !important;
-  width:min(760px,calc(100% - 28px));
+  z-index:9999 !important;
+  width:min(100%,1480px);
   margin:0 !important;
-  padding:7px;
+  padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));
   display:grid;
   grid-template-columns:repeat(5,minmax(0,1fr));
   gap:6px;
   overflow:visible;
-  border:1px solid rgba(116,158,211,.32);
-  border-radius:18px;
-  background:rgba(8,24,44,.94);
-  box-shadow:0 12px 34px rgba(0,0,0,.42),0 2px 12px rgba(45,112,190,.14);
+  border:1px solid rgba(116,158,211,.30);
+  border-bottom:0;
+  border-radius:18px 18px 0 0;
+  background:rgba(8,24,44,.97);
+  box-shadow:0 -8px 30px rgba(0,0,0,.28),0 2px 12px rgba(45,112,190,.12);
   backdrop-filter:blur(22px) saturate(145%);
   -webkit-backdrop-filter:blur(22px) saturate(145%);
 }
-#tabs.tabs button { min-width:0; min-height:46px; width:100%; padding:10px 5px; white-space:nowrap; }
+#tabs.tabs button {
+  min-width:0; min-height:48px; width:100%; padding:10px 5px;
+  white-space:nowrap; border-radius:12px;
+}
 @media(max-width:420px) {
-  #tabs.tabs { width:calc(100% - 16px); bottom:calc(8px + env(safe-area-inset-bottom,0px)) !important; gap:3px; padding:5px; border-radius:15px; }
-  #tabs.tabs button { min-height:44px; padding:9px 1px; font-size:clamp(9px,2.7vw,11px); }
+  body { padding-bottom:calc(100px + env(safe-area-inset-bottom,0px)) !important; }
+  #tabs.tabs { width:100%; gap:3px; padding:6px 5px calc(6px + env(safe-area-inset-bottom,0px)); border-radius:15px 15px 0 0; }
+  #tabs.tabs button { min-height:46px; padding:9px 1px; font-size:clamp(9px,2.8vw,11px); }
 }
 @media(min-width:761px) {
-  body { padding-bottom:120px !important; }
-  #tabs.tabs { bottom:20px !important; }
+  body { padding-bottom:112px !important; }
+  #tabs.tabs { bottom:0 !important; }
 }
 .settings-button {
   width:42px;height:42px;display:grid;place-items:center;border-radius:13px;
@@ -508,7 +513,7 @@ html[data-palette="light"] .settings-section { border-color:#d8e2ef; }
 html[data-palette="light"] .settings-help,html[data-palette="light"] .settings-row p { color:#5d718c; }
 html[data-palette="light"] .theme-choice,html[data-palette="light"] .settings-action,html[data-palette="light"] .settings-close { background:#f1f5fb;color:#14243b;border-color:#d0dceb; }
 @media(max-width:420px){ .settings-button{width:36px;height:36px;font-size:18px}.theme-options{grid-template-columns:1fr 1fr}.settings-dialog{border-radius:18px} }
-@media(min-width:761px){ #tabs.tabs{top:0;margin-top:14px} }
+
 
 </style>
 </head>
