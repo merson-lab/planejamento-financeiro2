@@ -932,7 +932,7 @@ function vMes() {
   var c = calc(),
       h = '<div class="nav"><button data-a="pm">‹</button><b>' + MS[c.M-1] + ' de ' + c.Y + '</b><button data-a="nm">›</button></div>';
   
-  h += '<button class="add" data-a="tab" data-i="2" style="margin:0 0 12px;background:var(--c);color:var(--bg);border-color:var(--c)">✅ Marcar diárias e pagamentos →</button>';
+  h += '<button class="add" data-a="tab" data-i="2" style="margin:0 0 12px;background:var(--c);color:var(--bg);border-color:var(--c)">📅 Abrir calendário para marcar diárias e pagamentos →</button>';
   var td = new Date();
   var isCurrentMonth = td.getFullYear() == c.Y && (td.getMonth() + 1) == c.M;
   if (isCurrentMonth) {
@@ -1144,7 +1144,7 @@ function vMes() {
   h += ic("carry") ? '<div class="note">Veio do mês anterior: pote ' + R(cy.p) + ' · pra mim ' + R(cy.m) + '</div>'
               : '<div class="card fld"><label>Começar o mês com este valor no pote (R$)</label>' + inp("c","0","ini",S.ini[S.ym]||0,"number") + '</div>';
 
-  return h.replace("<!--BAN-->", ban + spend + permH + snap) + '<button class="add" data-a="tab" data-i="2" style="background:var(--c);color:var(--bg);border-color:var(--c)">✅ Marcar diárias e pagamentos →</button>';
+  return h.replace("<!--BAN-->", ban + spend + permH + snap) + '<button class="add" data-a="tab" data-i="2" style="background:var(--c);color:var(--bg);border-color:var(--c)">📅 Abrir calendário para marcar diárias e pagamentos →</button>';
 }
 
 function mkGrid(c, pre, on) {
@@ -1160,9 +1160,9 @@ function mkGrid(c, pre, on) {
   return h + '</div>';
 }
 
-function vMarcar() {
+function marcarConteudo() {
   var c = calc(), rs = RS(c), tT = rs.tT, pg = rs.pg, pct = tT > 0 ? Math.min(100, Math.round(pg / tT * 100)) : 0,
-      h = navH();
+      h = '<div class="section-title" style="margin-top:18px"><b>Acompanhamento do mês</b><span class="muted">Pagamentos e recebimentos</span></div>';
   h += '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
        '<div class="note" style="margin-top:0">Paguei <b>' + R(pg) + '</b> · falta <b>' + R(Math.max(0, tT - pg)) + '</b> (' + pct + '% das contas)</div>';
 
@@ -1457,16 +1457,16 @@ function vCalendario() {
        '<span>Pra você: <b style="color:var(--v)">' + R(selInfo.mim) + '</b></span>' +
        '</div>';
   h += '</div>';
-  
+  h += marcarConteudo();
   return h;
 }
 
 function draw() {
   CC = {}; MC = {};
-  document.getElementById("tabs").innerHTML = ["Renda","Mês","Marcar","Calendário","Saldo","Contas"].map(function(n,i){
+  document.getElementById("tabs").innerHTML = ["Renda","Mês","Calendário","Saldo","Contas"].map(function(n,i){
     return '<button data-a="tab" data-i="'+i+'" class="'+(i==tab?"on":"")+'">'+n+'</button>';
   }).join("");
-  document.getElementById("view").innerHTML = [vRenda, vMes, vMarcar, vCalendario, vSaldo, vContas][tab]();
+  document.getElementById("view").innerHTML = [vRenda, vMes, vCalendario, vSaldo, vContas][tab]();
   if (tab === 1) {
     var chartCalc = calc();
     renderDashboardCharts(chartCalc, RS(chartCalc));
