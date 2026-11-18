@@ -250,6 +250,8 @@ button:active { transform:scale(.985); }
 .chart-panel.wide { grid-column:1/-1; }
 .chart-title { margin:0 0 4px; font-size:14px; font-weight:800; color:#e6f3eb; }
 .chart-subtitle { margin:0 0 14px; color:#8fa99a; font-size:11px; }
+.attention-note { margin-top:10px; padding:9px 11px; border:1px solid rgba(244,181,77,.28); border-left:3px solid #e7ad4e; border-radius:10px; background:rgba(244,181,77,.07); color:var(--mut); font-size:11px; line-height:1.5; }
+.attention-note b { color:#e7bd78; }
 .chart-wrap { height:230px; position:relative; }
 .chart-wrap.compact { height:220px; }
 .analytics-kicker { margin:22px 0 5px; color:#48dba5; font-size:10px; font-weight:800; letter-spacing:1.6px; }
@@ -1651,8 +1653,8 @@ function renderDashboardCharts(c, rs) {
   dashboardCharts.balance = new Chart(document.getElementById("balanceChart"), {
     type:"line",
     data:{labels:days.map(function(x){return x.d; }),datasets:[
-      {label:"Pote das contas",data:days.map(function(x){return x.pote;}),borderColor:"#27cf91",backgroundColor:"rgba(39,207,145,.12)",fill:true,tension:.36,borderWidth:2.5,pointRadius:0,pointHitRadius:10},
-      {label:"Dinheiro disponível",data:days.map(function(x){return x.mim;}),borderColor:"#9a9fff",backgroundColor:"rgba(154,159,255,.06)",fill:false,tension:.36,borderWidth:2.2,pointRadius:0,pointHitRadius:10}
+      {label:"Pote das contas",data:days.map(function(x){return x.pote;}),borderColor:"#27cf91",backgroundColor:"rgba(39,207,145,.12)",fill:true,tension:0,stepped:"after",borderWidth:2.5,pointRadius:2,pointHitRadius:10},
+      {label:"Dinheiro disponível",data:days.map(function(x){return x.mim;}),borderColor:"#9a9fff",backgroundColor:"rgba(154,159,255,.06)",fill:false,tension:0,stepped:"after",borderWidth:2.2,pointRadius:2,pointHitRadius:10}
     ]},
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{legend:{position:"bottom",labels:{usePointStyle:true,boxWidth:7,padding:18}},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+": "+currency(ctx.parsed.y);}}}},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:10}},y:{grid:{color:gridColor},ticks:{callback:function(v){return "R$ "+Number(v).toLocaleString("pt-BR");}}}}}
   });
@@ -2223,17 +2225,31 @@ function vMes() {
        '<div class="cd"><small>Entrou até agora</small><b>' + R(en) + '</b></div>' +
        '<div class="cd"><small>Sobra em mãos</small><b style="color:' + (sobraEmMaosLiquida < -0.005 ? "var(--bad)" : "var(--v)") + '">' + R(sobraEmMaosLiquida) + '</b></div>' +
        '</div>' +
+       (function(){
+         var hojeSaldo = new Date(), diaSaldo = (hojeSaldo.getFullYear() === c.Y && hojeSaldo.getMonth()+1 === c.M) ? hojeSaldo.getDate() : (S.ym < currentYM ? c.N : 0),
+             acumuladoMim = diaSaldo > 0 && c.days && c.days[diaSaldo-1] ? c.days[diaSaldo-1].mim : 0,
+             saldoAnteriorMim = diaSaldo > 1 && c.days && c.days[diaSaldo-2] ? c.days[diaSaldo-2].mim : 0,
+             variacaoDiaMim = acumuladoMim - saldoAnteriorMim;
+         return '<div class="card" style="border:2px solid var(--v);margin:10px 0 14px;padding:14px">' +
+           '<small style="color:var(--mut);font-weight:700">DINHEIRO ACUMULADO PRA VOCÊ ' + (diaSaldo ? 'ATÉ O DIA ' + diaSaldo : '') + '</small>' +
+           '<div style="font-size:30px;font-weight:850;color:var(--v);margin:5px 0">' + R(acumuladoMim) + '</div>' +
+           '<div class="note">Esse é o saldo planejado que vai se juntando dia após dia: soma a sua parte das rendas e desconta gastos e valores autorizados para completar o Pote.</div>' +
+           '<div class="attention-note"><b>⚠ Ponto de atenção:</b> é uma previsão baseada no que está cadastrado e marcado. Para saber o dinheiro realmente disponível, confira o saldo real e o extrato.</div>' +
+           (diaSaldo ? '<div class="note" style="margin-top:6px">' + (variacaoDiaMim >= 0 ? 'Hoje aumentou ' : 'Hoje diminuiu ') + '<b>' + R(Math.abs(variacaoDiaMim)) + '</b> em relação a ontem.</div>' : '<div class="note">O acumulado aparece quando houver dias calculados neste mês.</div>') +
+           '</div>';
+       })() +
        '<div class="analytics-kicker">ANÁLISE INTELIGENTE</div><h2 class="analytics-heading">Visão dos seus números</h2>' +
        '<div class="charts-grid">' +
-       '<section class="chart-panel wide"><h3 class="chart-title">Evolução do dinheiro ao longo do mês</h3><p class="chart-subtitle">Acompanhe o pote das contas e o valor disponível para você, dia a dia</p><div class="chart-wrap"><canvas id="balanceChart" aria-label="Gráfico da evolução dos saldos"></canvas></div></section>' +
-       '<section class="chart-panel"><h3 class="chart-title">Distribuição das contas</h3><p class="chart-subtitle">Veja quais contas representam maior parte dos gastos previstos</p><div class="chart-wrap compact"><canvas id="expenseChart" aria-label="Gráfico de distribuição das contas"></canvas></div></section>' +
-       '<section class="chart-panel"><h3 class="chart-title">Comparativo financeiro</h3><p class="chart-subtitle">Receitas, contas previstas e pagamentos realizados</p><div class="chart-wrap compact"><canvas id="paymentChart" aria-label="Gráfico comparativo financeiro"></canvas></div></section>' +
+       '<section class="chart-panel wide"><h3 class="chart-title">Evolução do dinheiro ao longo do mês</h3><p class="chart-subtitle">Acompanhe o pote das contas e o valor disponível para você, dia a dia</p><div class="chart-wrap"><canvas id="balanceChart" aria-label="Gráfico da evolução dos saldos"></canvas></div><div class="attention-note"><b>⚠ Ponto de atenção:</b> as linhas mostram saldos previstos no fechamento de cada dia, não comprovantes bancários. A linha em degraus indica que o saldo muda nas datas de entradas e pagamentos. Se uma renda não cair ou uma conta for paga em outra data, atualize o calendário.</div></section>' +
+       '<section class="chart-panel"><h3 class="chart-title">Distribuição das contas</h3><p class="chart-subtitle">Veja quais contas representam maior parte dos gastos previstos</p><div class="chart-wrap compact"><canvas id="expenseChart" aria-label="Gráfico de distribuição das contas"></canvas></div><div class="attention-note"><b>⚠ Ponto de atenção:</b> mostra a participação de cada conta no total previsto do mês. Não significa que todas já foram pagas. Contas recorrentes são somadas conforme as ocorrências previstas.</div></section>' +
+       '<section class="chart-panel"><h3 class="chart-title">Comparativo financeiro</h3><p class="chart-subtitle">Receitas, contas previstas e pagamentos realizados</p><div class="chart-wrap compact"><canvas id="paymentChart" aria-label="Gráfico comparativo financeiro"></canvas></div><div class="attention-note"><b>⚠ Ponto de atenção:</b> as barras têm significados diferentes: receitas previstas são o total estimado de entradas; contas previstas são o total de despesas do mês; já pagas é apenas a parte das despesas confirmada como paga. Compare os valores considerando essa diferença.</div></section>' +
        '</div>' +
        '<div class="bar"><i style="width:' + (tT > 0 ? Math.min(100, Math.round(pg / tT * 100)) : 0) + '%"></i></div>' +
        '<div class="note" style="margin-top:0">' + (tT > 0 ? Math.min(100, Math.round(pg / tT * 100)) : 0) + '% das contas do mês já pagas</div>' +
        '<div class="note">Previsão de sobra no fim do mês: <b>' + R(mc + iT - tT) + '</b>' +
        (ic("tipoRenda") === "diaria" ? ' · ' + nd + ' de ' + c.w + ' diárias marcadas' : '') +
-       (Math.abs(mc) > 0.005 ? '<br>Inclui ' + R(mc) + ' que sobrou dos meses anteriores.' : '') + '</div>';
+       (Math.abs(mc) > 0.005 ? '<br>Inclui ' + R(mc) + ' que sobrou dos meses anteriores.' : '') + '</div>' +
+       '<div class="attention-note"><b>⚠ Ponto de atenção:</b> a sobra final é uma projeção matemática. Ela pode mudar se você alterar valores, datas, recebimentos, pagamentos ou gastos pessoais.</div>';
 
   if (ic("tipoRenda") === "diaria") {
     h += '<div class="big">Em cada diária de ' + R(ic("dia")) + ': separe <b>' + R(c.g) + '</b> pro pote das contas e fique com <b>' + R(ic("dia") - c.g) + '</b> pra você.<small style="display:block;color:var(--mut);font-size:12px;margin-top:4px">Já inclui 20% de folga pro mês que vem.' +
