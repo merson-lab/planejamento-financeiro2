@@ -1201,6 +1201,70 @@ html[data-palette="ocean"] #tabs.tabs { background:rgba(5,35,49,.98) !important;
 html[data-palette="violet"] #tabs.tabs { background:rgba(26,22,55,.98) !important; }
 html[data-palette="emerald"] #tabs.tabs { background:rgba(7,39,36,.98) !important; }
 
+
+/* DEFINITIVE FIX: the navigation is a direct child of body, never inside #app-screen.
+   This prevents Safari/iOS and Android WebView from using the app container as its fixed-position containing block. */
+#tabs[hidden] { display:none !important; }
+#tabs.tabs {
+  position:fixed !important;
+  top:auto !important;
+  bottom:0 !important;
+  left:0 !important;
+  right:0 !important;
+  width:100% !important;
+  max-width:none !important;
+  margin:0 !important;
+  transform:none !important;
+  box-sizing:border-box !important;
+  z-index:2147483000 !important;
+  display:grid !important;
+  grid-template-columns:repeat(5,minmax(0,1fr)) !important;
+  align-items:stretch !important;
+  gap:4px !important;
+  overflow:hidden !important;
+  padding:8px max(8px,env(safe-area-inset-left,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-right,0px)) !important;
+  border-radius:19px 19px 0 0 !important;
+}
+#tabs.tabs button {
+  min-width:0 !important;
+  max-width:100% !important;
+  width:100% !important;
+  margin:0 !important;
+  padding:7px 1px !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:4px !important;
+  overflow:hidden !important;
+  white-space:nowrap !important;
+  transform:none !important;
+  box-sizing:border-box !important;
+}
+#tabs.tabs button .tab-icon,
+#tabs.tabs button .tab-label { max-width:100% !important; }
+@media(min-width:761px) {
+  #tabs.tabs {
+    left:50% !important;
+    right:auto !important;
+    width:min(100%,1180px) !important;
+    max-width:1180px !important;
+    transform:translateX(-50%) !important;
+  }
+}
+body { padding-bottom:calc(100px + env(safe-area-inset-bottom,0px)) !important; }
+html[data-palette="light"] #tabs.tabs {
+  background:rgba(255,255,255,.98) !important;
+  border:1px solid #dce8e6 !important;
+  border-bottom:0 !important;
+  box-shadow:0 -6px 22px rgba(26,68,69,.10) !important;
+}
+html[data-palette="light"] #tabs.tabs button { color:#71858b !important; }
+html[data-palette="light"] #tabs.tabs button.on {
+  background:#e4f3f0 !important;
+  color:#167d78 !important;
+}
+
 </style>
 </head>
 <body>
@@ -1265,9 +1329,9 @@ html[data-palette="emerald"] #tabs.tabs { background:rgba(7,39,36,.98) !importan
   </header>
   <div class="sync" id="sync"></div>
   <div style="margin-bottom: 10px;"><button class="add" data-a="notif" id="btn-notif" style="margin-top:0;background:var(--card);color:var(--ink);">🔔 Avisar vencimentos quando eu abrir o app</button></div>
-  <div class="tabs" id="tabs"></div>
   <div id="view"></div>
 </div>
+<div class="tabs" id="tabs" hidden></div>
 
 <div class="settings-overlay" id="settings-overlay" role="dialog" aria-modal="true" aria-labelledby="settings-title">
   <div class="settings-dialog">
@@ -1572,6 +1636,7 @@ auth.onAuthStateChanged(function(user) {
     loadPalette();
     document.getElementById("auth-screen").style.display = "none";
     document.getElementById("app-screen").style.display = "block";
+    document.getElementById("tabs").hidden = false;
     listenCloud(user.uid);
   } else {
     currentUserUid = null;
@@ -1584,6 +1649,7 @@ auth.onAuthStateChanged(function(user) {
     S = createEmptyState();
     document.getElementById("auth-screen").style.display = "block";
     document.getElementById("app-screen").style.display = "none";
+    document.getElementById("tabs").hidden = true;
   }
 });
 
