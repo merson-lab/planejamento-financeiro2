@@ -2173,6 +2173,7 @@ function vMes() {
   var c = calc(),
       h = '<div class="nav"><button data-a="pm">‹</button><b>' + MS[c.M-1] + ' de ' + c.Y + '</b><button data-a="nm">›</button></div>';
   
+  h += '<div class="note card"><b>Como o Mês se conecta:</b> aqui você acompanha o resumo e as projeções. As marcações de recebimentos e pagamentos no Calendário alteram os cálculos; Renda define valores e frequência, e Contas define despesas e vencimentos. Os valores previstos podem mudar quando você confirma ou altera eventos.</div>';
   h += '<button class="add" data-a="tab" data-i="2" style="margin:0 0 12px;background:var(--c);color:var(--bg);border-color:var(--c)">📅 Abrir calendário para marcar diárias e pagamentos →</button>';
   var td = new Date();
   var isCurrentMonth = td.getFullYear() == c.Y && (td.getMonth() + 1) == c.M;
@@ -2480,7 +2481,7 @@ function marcarConteudo() {
 }
 
 function vContas() {
-  var h = navH() + '<p class="note">Você está editando as contas de <b>' + mNome(S.ym) + '</b>. Toque em qualquer dia no calendário abaixo para marcar ou desmarcar livremente se o dia conta ou não.</p>';
+  var h = navH() + '<div class="note card"><b>Como Contas se conecta:</b> valores e vencimentos cadastrados aqui entram na previsão do Mês e no gráfico do Saldo. Ao confirmar pagamento no Calendário, o planejamento considera a conta paga; o vencimento continua servindo como referência.</div><p class="note">Você está editando as contas de <b>' + mNome(S.ym) + '</b>. Toque em qualquer dia no calendário abaixo para marcar ou desmarcar livremente se o dia conta ou não.</p>';
   var LB = S.bills.filter(function(b){ return act(b, S.ym); }).map(function(b){ return eff(b, S.ym); });
   if (LB.length === 0) {
     h += '<div class="card" style="text-align:center;color:var(--mut);padding:16px;">Nenhuma conta ativa neste mês.</div>';
@@ -2576,7 +2577,7 @@ function vBackup() {
 
 function vRenda() {
   var tr = ic("tipoRenda"),
-      h = navH() + '<p class="note">Você está editando a renda de <b>' + mNome(S.ym) + '</b>. O que mudar aqui vale deste mês em diante e <b>não altera os meses anteriores</b>.</p>';
+      h = navH() + '<div class="note card"><b>Como Renda se conecta:</b> escolha aqui o tipo e os valores de recebimento. O sistema distribui a previsão pelos dias, calcula a parte destinada ao Pote e a parte disponível para você. O Calendário confirma os dias/recebimentos e Mês e Saldo refletem as alterações.</div><p class="note">Você está editando a renda de <b>' + mNome(S.ym) + '</b>. O que mudar aqui vale deste mês em diante e <b>não altera os meses anteriores</b>.</p>';
   h += '<div class="card fld"><label>Como você recebe sua renda principal?</label>' +
        '<select data-s="c" data-i="0" data-f="tipoRenda">' +
        '<option value="diaria"' + (tr==="diaria"?" selected":"") + '>Por Diária (Dias da semana)</option>' +
@@ -2627,6 +2628,7 @@ function serie() { return calc().days; }
 function vSaldo() {
   var c = calc(), s = serie(), vs = [0],
       h = '<div class="nav"><button data-a="pm">‹</button><b>' + MS[c.M-1] + ' de ' + c.Y + '</b><button data-a="nm">›</button></div>';
+  h += '<div class="note card"><b>Como o Saldo se conecta:</b> o gráfico é uma previsão calculada com rendas, contas e marcações do Calendário. O extrato é separado e registra lançamentos reais; não confunda previsão com dinheiro confirmado. Evite registrar manualmente uma entrada ou saída que já esteja sendo contabilizada automaticamente, para não duplicar.</div>';
   s.forEach(function(x){ vs.push(x.pote, x.mim); });
   var mn = Math.min.apply(null, vs), mx = Math.max.apply(null, vs), rg = (mx - mn) || 1, W = 300, H = 130;
   function X(d) { return 4 + (d - 1) * (W - 8) / Math.max(1, c.N - 1); }
@@ -2716,6 +2718,7 @@ function vCalendario() {
   var c = calc(), s = serie(),
       h = '<div class="nav"><button data-a="pm">‹</button><b>' + MS[c.M-1] + ' de ' + c.Y + '</b><button data-a="nm">›</button></div>';
   
+  h += '<div class="note card"><b>Como o Calendário se conecta:</b> marque diárias, recebimentos e contas pagas aqui. Essas confirmações alimentam o resumo do Mês e as projeções do Saldo. A data de vencimento é diferente da data em que você realmente paga.</div>';
   var firstDay = new Date(c.Y, c.M - 1, 1).getDay();
   var totalDays = c.N;
   var today = new Date();
