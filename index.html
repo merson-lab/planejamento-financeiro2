@@ -2748,7 +2748,12 @@ function vCalendario() {
          '<span class="grow"><b>Diária de Trabalho</b><small>Entra ' + R(ic("dia")) + '</small></span>' +
          '</button>';
     var parteMarcada = !!((S.separado || {})[S.ym + "d" + selDay]);
-    h += '<button class="row' + (parteMarcada ? " done" : "") + '" data-a="separar" data-i="' + selDay + '" style="margin-top:6px;"><span class="chk">' + (parteMarcada ? "✓" : "") + '</span><span class="grow"><b>Minha parte do dia</b><small>' + (parteMarcada ? "Você marcou que separou/recebeu sua parte." : "Marcar quando separar ou receber o dinheiro que fica pra você: " + R(Math.max(0, ic("dia") - c.g))) + '</small></span></button>';
+    var valorMinhaParte = Math.max(0, Number(ic("dia") || 0) - Number(c.g || 0));
+    h += '<button class="row' + (parteMarcada ? " done" : "") + '" data-a="separar" data-i="' + selDay + '" style="margin-top:6px;align-items:flex-start;">' +
+         '<span class="chk">' + (parteMarcada ? "✓" : "") + '</span>' +
+         '<span class="grow"><b>Minha parte do dia</b><small>Valor planejado para você: <b>' + R(valorMinhaParte) + '</b></small><small>' +
+         (parteMarcada ? '✓ Você confirmou que separou/recebeu ' + R(valorMinhaParte) + '.' : 'Marque quando separar ou receber esse valor.') +
+         '</small></span><span class="amt in">' + R(valorMinhaParte) + '</span></button>';
   }
   
   if (selInfo.ev.length === 0) {
