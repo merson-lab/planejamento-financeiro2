@@ -515,6 +515,50 @@ html[data-palette="light"] .theme-choice,html[data-palette="light"] .settings-ac
 @media(max-width:420px){ .settings-button{width:36px;height:36px;font-size:18px}.theme-options{grid-template-columns:1fr 1fr}.settings-dialog{border-radius:18px} }
 
 
+/* VIBRANT MODERN FINISH — cores vivas, profundidade e hierarquia visual */
+:root { --c:#42c8ff; --v:#9278ff; --ok:#35dfa9; --bad:#ff718f; }
+body {
+ background:
+  radial-gradient(ellipse at 4% 0%,rgba(37,156,255,.30),transparent 34%),
+  radial-gradient(ellipse at 96% 13%,rgba(140,87,255,.22),transparent 31%),
+  radial-gradient(ellipse at 52% 100%,rgba(0,211,190,.10),transparent 38%),
+  linear-gradient(155deg,#071326 0%,#0a1b36 48%,#101b3b 100%);
+}
+.app-topbar { border-bottom-color:rgba(101,174,255,.25); }
+.brand-mark { background:linear-gradient(135deg,#3bd7ff 0%,#547bff 52%,#a56bff 100%); box-shadow:0 10px 34px rgba(74,133,255,.42); }
+.welcome-copy .eyebrow,.analytics-kicker { color:#62dcff; }
+.cd,.card,.big,.chart-panel {
+ background:linear-gradient(145deg,rgba(24,48,86,.97),rgba(13,29,57,.98));
+ border:1px solid rgba(103,158,235,.32);
+ box-shadow:0 14px 34px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.055);
+}
+.cd:nth-child(4n+1) { border-top:2px solid #35caff; }
+.cd:nth-child(4n+2) { border-top:2px solid #987bff; }
+.cd:nth-child(4n+3) { border-top:2px solid #36dca9; }
+.cd:nth-child(4n) { border-top:2px solid #ffb65e; }
+.cd b { text-shadow:0 2px 18px rgba(62,151,255,.12); }
+.tabs { background:rgba(7,19,39,.94); border-color:rgba(107,163,255,.32); box-shadow:0 -10px 35px rgba(0,0,0,.28); }
+.tabs button { color:#b7c9e8; font-weight:750; }
+.tabs button.on { background:linear-gradient(120deg,#35d5ff 0%,#477eff 52%,#9871ff 100%); color:#06152d; box-shadow:0 5px 22px rgba(68,139,255,.4),inset 0 1px 0 rgba(255,255,255,.5); }
+.add { background:linear-gradient(115deg,rgba(36,119,211,.32),rgba(106,83,220,.22)); border-color:rgba(95,173,255,.48); }
+.add:hover { background:linear-gradient(115deg,rgba(36,151,230,.46),rgba(126,92,245,.36)); }
+.au-main { background:linear-gradient(110deg,#35d5ff,#477eff 55%,#9871ff); box-shadow:0 8px 24px rgba(67,126,255,.24); }
+.bar i { background:linear-gradient(90deg,#35d5ff,#477eff,#a477ff); }
+.settings-button { background:linear-gradient(135deg,#183d70,#342c78); border-color:#527fcb; color:#fff; box-shadow:0 5px 18px rgba(74,119,255,.2); }
+.settings-dialog { background:linear-gradient(145deg,#142e55,#101d3d 65%,#211d4b); border-color:rgba(116,164,255,.45); }
+.settings-select { min-width:145px;max-width:58%;padding:10px 34px 10px 12px;border:1px solid #5279b2;border-radius:11px;background:#0c1d39;color:#f1f6ff;font:inherit;font-weight:700; }
+.start-tab-row { align-items:center; }
+.settings-section { border-top-color:rgba(135,169,255,.22); }
+.theme-choice { background:linear-gradient(135deg,#122b4d,#1a2850); border-color:rgba(111,158,239,.35); }
+.theme-choice[aria-pressed="true"] { border-color:#54d6ff;box-shadow:0 0 0 2px rgba(84,214,255,.2),0 8px 22px rgba(54,147,255,.16); }
+.row { box-shadow:0 5px 18px rgba(0,0,0,.10); }
+input,select,textarea,button { accent-color:#4dbdff; }
+@media(max-width:420px) {
+ .settings-select { min-width:130px; }
+ .cd,.card,.big,.chart-panel { border-radius:16px; }
+}
+@media(hover:hover) { .row:hover,.card:hover { border-color:rgba(93,179,255,.55); } .tabs button:hover:not(.on) { background:rgba(77,139,225,.14); } }
+
 </style>
 </head>
 <body>
@@ -595,6 +639,11 @@ html[data-palette="light"] .theme-choice,html[data-palette="light"] .settings-ac
         <button class="theme-choice" type="button" data-palette-choice="emerald" aria-pressed="false"><span class="theme-swatch" style="background:linear-gradient(135deg,#092d2a,#45d6a0)"></span>Esmeralda</button>
         <button class="theme-choice" type="button" data-palette-choice="light" aria-pressed="false"><span class="theme-swatch" style="background:linear-gradient(135deg,#fff,#9bb9df)"></span>Claro</button>
       </div>
+    </section>
+    <section class="settings-section">
+      <h3>🚀 Tela inicial</h3><p class="settings-help">Escolha qual seção será aberta automaticamente quando você entrar no aplicativo.</p>
+      <div class="settings-row start-tab-row"><p>Começar em</p><select id="settings-start-tab" class="settings-select"><option value="0">Renda</option><option value="1">Mês</option><option value="2">Calendário</option><option value="3">Saldo</option><option value="4">Contas</option></select></div>
+      <p class="settings-help" id="settings-start-tab-status" aria-live="polite">A preferência fica salva nesta conta e neste aparelho.</p>
     </section>
     <section class="settings-section">
       <h3>🔔 Notificações</h3><p class="settings-help">O navegador controla a permissão de notificações. Você pode ativá-la pelo botão de avisos na tela principal ou nas configurações do aparelho.</p>
@@ -751,6 +800,17 @@ function updateProfileHeader(user) {
   if (hello) hello.textContent = "Olá, " + first + "!";
   if (avatar) avatar.textContent = full.split(/\s+/).slice(0,2).map(function(x){return x.charAt(0);}).join("").toUpperCase();
 }
+function startTabStorageKey(){ return "plano-start-tab-" + (currentUserUid || "guest"); }
+function readStartTab(){
+  var n=1;try{var raw=localStorage.getItem(startTabStorageKey());if(raw!==null)n=parseInt(raw,10);}catch(e){}
+  return Number.isInteger(n)&&n>=0&&n<=4?n:1;
+}
+function saveStartTab(value){
+  var n=parseInt(value,10);if(!Number.isInteger(n)||n<0||n>4)n=1;
+  try{localStorage.setItem(startTabStorageKey(),String(n));}catch(e){}
+  tab=n;draw();
+  var st=document.getElementById("settings-start-tab-status");if(st)st.textContent="Tela inicial salva: "+["Renda","Mês","Calendário","Saldo","Contas"][n]+".";
+}
 function paletteStorageKey(){ return "plano-palette-" + (currentUserUid || "guest"); }
 function applyPalette(name){
   var allowed=["navy","ocean","violet","emerald","light"];
@@ -768,6 +828,7 @@ function openSettings(){
   var ov=document.getElementById("settings-overlay"); if(!ov)return;
   var u=auth.currentUser;
   document.getElementById("settings-account").textContent=(u&&u.email)||"Conta conectada";
+  var startSel=document.getElementById("settings-start-tab");if(startSel)startSel.value=String(readStartTab());
   var perm=("Notification" in window)?Notification.permission:"unsupported";
   document.getElementById("settings-notif-state").textContent=perm==="granted"?"Avisos permitidos neste navegador":perm==="denied"?"Avisos bloqueados nas permissões do navegador":perm==="unsupported"?"Este navegador não oferece notificações":"Avisos ainda não autorizados";
   document.getElementById("settings-notif").textContent=perm==="granted"?"Permissão concedida":perm==="unsupported"?"Indisponível":"Ativar avisos";
@@ -845,7 +906,7 @@ function renderDashboardCharts(c, rs) {
   if (expenseItems.length>6) { expenseLabels.push("Outras"); expenseValues.push(expenseItems.slice(6).reduce(function(t,x){return t+x.value;},0)); }
   if (!expenseValues.length) { expenseLabels=["Sem contas cadastradas"]; expenseValues=[0]; }
   dashboardCharts.expenses = new Chart(document.getElementById("expenseChart"), {
-    type:"doughnut",data:{labels:expenseLabels,datasets:[{data:expenseValues,backgroundColor:["#27cf91","#8f9cff","#f3bd62","#4e9ed8","#d98bc4","#83b69c","#6d8796"],borderColor:"#101d19",borderWidth:4,hoverOffset:6}]},
+    type:"doughnut",data:{labels:expenseLabels,datasets:[{data:expenseValues,backgroundColor:["#22d3a6","#8b7cff","#ffb84d","#36b8ff","#ff78ad","#a3e635","#f97373"],borderColor:"#101d19",borderWidth:4,hoverOffset:6}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:"68%",plugins:{legend:{position:"bottom",labels:{usePointStyle:true,boxWidth:7,padding:13,font:{size:10}}},tooltip:{callbacks:{label:function(ctx){return ctx.label+": "+currency(ctx.parsed);}}}}}
   });
   dashboardCharts.payments = new Chart(document.getElementById("paymentChart"), {
@@ -857,6 +918,7 @@ function renderDashboardCharts(c, rs) {
 auth.onAuthStateChanged(function(user) {
   if (user) {
     currentUserUid = user.uid;
+    tab = readStartTab();
     updateProfileHeader(user);
     loadPalette();
     document.getElementById("auth-screen").style.display = "none";
@@ -864,6 +926,7 @@ auth.onAuthStateChanged(function(user) {
     listenCloud(user.uid);
   } else {
     currentUserUid = null;
+    tab = readStartTab();
     updateProfileHeader(null);
     closeSettings();
     loadPalette();
@@ -958,6 +1021,7 @@ document.getElementById("logout-btn").addEventListener("click", function(){
 document.getElementById("settings-close").addEventListener("click",closeSettings);
 document.getElementById("settings-overlay").addEventListener("click",function(e){if(e.target===this)closeSettings();});
 document.getElementById("settings-delete").addEventListener("click",deleteCurrentAccount);
+document.getElementById("settings-start-tab").addEventListener("change",function(){saveStartTab(this.value);});
 document.getElementById("settings-notif").addEventListener("click",function(){
   if(!("Notification" in window))return;
   Notification.requestPermission().then(function(){openSettings();});
@@ -1863,7 +1927,7 @@ document.addEventListener("change", function(e){
 document.addEventListener("click", function(e){
   var t = e.target.closest("[data-a]"); if (!t) return;
   var a = t.dataset.a, i = t.dataset.i;
-  if (a == "tab") { tab = +i; }
+  if (a == "tab") { tab = +i; try{localStorage.setItem(startTabStorageKey(),String(tab));}catch(e){} }
   else if (a == "pm" || a == "nm") {
     var p = S.ym.split("-"), d = new Date(+p[0], +p[1] - 1 + (a == "nm" ? 1 : -1), 1);
     S.ym = d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2);
