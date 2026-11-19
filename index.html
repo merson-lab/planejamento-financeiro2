@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#090c0b">
+<script>try{if(window.Capacitor||/; wv\)/.test(navigator.userAgent||""))document.documentElement.classList.add("lite");}catch(e){}</script>
 <meta name="color-scheme" content="light dark">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -27,8 +28,8 @@ html[data-palette=navy]{--c:#55b8ff;--v:#8aa2ff;--ok:#5fd6a0}
 html[data-palette=light],html[data-palette=sage]{--bg:#f1f5f3;--card:#fff;--card2:#f5f8f6;--ink:#14201b;--mut:#62736b;--line:#dbe4df;--c:#1f9d6b;--v:#3f8f00;--ok:#1f9d6b;--bad:#c53030;--warn:#b7791f;--onc:#fff;color-scheme:light}
 html[data-palette=sage]{--bg:#f2f4ed;--c:#5f8a6b;--ok:#5f8a6b}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html{background:var(--bg)}
-body{margin:0;color:var(--ink);font:15px/1.45 "Sora",system-ui,sans-serif;max-width:760px;margin-inline:auto;min-height:100vh;background:radial-gradient(90% 40% at 100% -5%,color-mix(in srgb,var(--c) 20%,transparent),transparent 60%),var(--bg);padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(110px + env(safe-area-inset-bottom,0px))}
+html{background:var(--bg);overflow-x:hidden;max-width:100%}
+body{margin:0;overflow-x:hidden;color:var(--ink);font:15px/1.45 "Sora",system-ui,sans-serif;max-width:760px;margin-inline:auto;min-height:100vh;background:radial-gradient(90% 40% at 100% -5%,color-mix(in srgb,var(--c) 20%,transparent),transparent 60%),var(--bg);padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(110px + env(safe-area-inset-bottom,0px))}
 button,input,select,textarea{font:inherit;color:var(--ink)}
 button{cursor:pointer}
 h1,h2,h3{margin:0;letter-spacing:-.02em}
@@ -48,7 +49,7 @@ h2{font-size:18px;margin-bottom:8px}h3{font-size:15px}
 .settings-button,.settings-close{width:40px;height:40px;border-radius:50%;border:0;background:var(--card2);font-size:17px}
 .logout-button{height:40px;padding:0 14px;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mut);font-size:13px}
 /* abas inferiores */
-.tabs{background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));gap:2px}
+.tabs{background:var(--bg);border-top:1px solid var(--line);padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));gap:2px}
 .tabs button{background:transparent;border:0;color:var(--mut);border-radius:16px;padding:7px 0;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:600}
 .tab-icon svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block}
 .tabs button.on{color:var(--v);background:color-mix(in srgb,var(--v) 12%,transparent)}
@@ -60,7 +61,7 @@ h2{font-size:18px;margin-bottom:8px}h3{font-size:15px}
 /* cartões */
 .card,.cd,.big,.chart-panel{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px;margin-bottom:12px;min-width:0}
 .big{background:linear-gradient(150deg,color-mix(in srgb,var(--c) 22%,var(--card)),var(--card) 70%);border-color:color-mix(in srgb,var(--c) 45%,var(--line))}
-.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
 .cards .cd{margin:0;padding:14px}
 .cd small{display:block;color:var(--mut);font-size:12px;margin-bottom:2px}
 .cd b{font-size:19px;font-weight:600}
@@ -84,14 +85,14 @@ h2{font-size:18px;margin-bottom:8px}h3{font-size:15px}
 /* formulários */
 label{font-size:12px;color:var(--mut);font-weight:600}
 .card input,.card select,.fld input,.fld select,textarea,.settings-select{width:100%;padding:11px 12px;margin-top:5px;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--ink)}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
 .add,.del{width:100%;margin-top:10px;padding:13px;border-radius:999px;border:1px solid var(--line);background:var(--card2);font-weight:600}
 .add:active{background:var(--line)}
 .del{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 45%,transparent);background:transparent}
 .wds{display:flex;gap:6px;margin:8px 0 14px}
 .wds button,.mini button,.mk button,.mk .off,.pb button{border:1px solid var(--line);background:var(--card2);border-radius:14px;font-weight:600}
 .wds button{flex:1;padding:11px 0}
-.mini,.mk{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:8px 0 12px}
+.mini,.mk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:8px 0 12px}
 .mini button{padding:9px 0;font-size:13px}.mini button.pass{opacity:.4}
 .mk button,.mk .off{min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:14px}
 .mk .off{opacity:.3;border-style:dashed;background:transparent}
@@ -102,7 +103,7 @@ label{font-size:12px;color:var(--mut);font-weight:600}
 .bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin:0 0 6px}
 .bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--c),var(--v))}
 /* calendário */
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px 0;margin-bottom:12px;padding:14px 8px;background:var(--card2);border-radius:22px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px 0;margin-bottom:12px;padding:14px 4px;background:var(--card2);border-radius:22px;width:100%;min-width:0}
 .cal-head{text-align:center;font-size:11px;font-weight:600;color:var(--mut);padding:6px 0 10px}
 .cal-day{display:flex;flex-direction:column;align-items:center;gap:5px;min-height:56px;padding:9px 0 4px;border:0;border-radius:14px;background:transparent;cursor:pointer;position:relative}
 .cal-day.empty{cursor:default}
@@ -118,7 +119,7 @@ label{font-size:12px;color:var(--mut);font-weight:600}
 /* login */
 #auth-screen{min-height:100vh;align-items:center;justify-content:center;padding:20px;background:radial-gradient(70% 50% at 80% 10%,color-mix(in srgb,var(--c) 35%,transparent),transparent 65%),var(--bg)}
 #auth-screen[style*="block"],#auth-screen[style*="flex"]{display:flex!important}
-.au-card{width:100%;max-width:400px;padding:28px 24px;border-radius:30px;background:color-mix(in srgb,var(--card) 92%,transparent);border:1px solid var(--line);backdrop-filter:blur(16px)}
+.au-card{width:100%;max-width:400px;padding:28px 24px;border-radius:30px;background:transparent;border:0;isolation:isolate;overflow:hidden}
 .au-logo{width:56px;height:56px;display:block;margin:0 auto 10px}
 .au-card h2{text-align:center;font-size:22px;margin:0}.au-sub{text-align:center;color:var(--mut);margin:4px 0 18px;font-size:13px}
 .au-field{display:flex;align-items:center;gap:10px;padding:0 12px;margin:5px 0 12px;border:1px solid var(--line);border-radius:16px;background:var(--bg)}
@@ -154,8 +155,7 @@ label{font-size:12px;color:var(--mut);font-weight:600}
 @media(max-width:380px){.cards{grid-template-columns:1fr}.logout-button{display:none}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 /* ===== calendário com nomes ===== */
-.cal-grid{padding:14px 4px}
-.cal-day{min-height:66px;padding:8px 0 4px;gap:4px}
+.cal-day{min-height:66px;padding:8px 0 4px;gap:4px;min-width:0;overflow:hidden}
 .cal-dots{flex-direction:column;align-items:stretch;gap:2px;width:100%;padding:0 2px;min-height:6px;flex-wrap:nowrap}
 .cal-badge{position:relative;display:block;width:auto;height:auto;border-radius:0;background:none!important;padding-left:9px;font-size:8px;line-height:1.3;font-weight:600;color:color-mix(in srgb,var(--ink) 80%,transparent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
 .cal-badge::before{content:"";position:absolute;left:1px;top:50%;margin-top:-3px;width:6px;height:6px;border-radius:50%;background:#2fa36b}
@@ -175,12 +175,12 @@ label{font-size:12px;color:var(--mut);font-weight:600}
 .chart-panel:nth-child(4)::before{background:linear-gradient(90deg,#f2b84b,#ff7ab6,#b49aff)}
 .chart-title{display:flex;align-items:center;gap:8px}
 .chart-title::before{content:"";width:10px;height:10px;border-radius:50%;background:conic-gradient(var(--c),var(--v),var(--blue),var(--c));box-shadow:0 0 10px var(--c)}
-.chart-wrap canvas{filter:drop-shadow(0 6px 14px color-mix(in srgb,var(--c) 18%,transparent))}
+
 /* ===== login animado ===== */
-@property --ang{syntax:"<angle>";initial-value:0deg;inherits:false}
-#auth-screen[style*="block"],#auth-screen[style*="flex"]{position:fixed!important;inset:0;z-index:60;overflow:auto;perspective:900px}
+
+#auth-screen[style*="block"],#auth-screen[style*="flex"]{position:fixed!important;inset:0;z-index:60;overflow:auto}
 .au-bg{position:fixed;inset:0;overflow:hidden;z-index:0;pointer-events:none}
-.au-bg .blob{position:absolute;width:62vmax;height:62vmax;border-radius:50%;filter:blur(70px);opacity:.5;will-change:transform}
+.au-bg .blob{position:absolute;width:62vmax;height:62vmax;border-radius:50%;opacity:.5}
 .blob.b1{background:radial-gradient(circle,var(--c),transparent 65%);left:-22vmax;top:-20vmax;animation:drift1 16s ease-in-out infinite alternate}
 .blob.b2{background:radial-gradient(circle,var(--v),transparent 65%);right:-26vmax;top:8vmax;opacity:.32;animation:drift2 19s ease-in-out infinite alternate}
 .blob.b3{background:radial-gradient(circle,#34a8f0,transparent 65%);left:-10vmax;bottom:-30vmax;opacity:.38;animation:drift3 22s ease-in-out infinite alternate}
@@ -188,11 +188,11 @@ label{font-size:12px;color:var(--mut);font-weight:600}
 @keyframes drift1{to{transform:translate(14vmax,10vmax) scale(1.15)}}
 @keyframes drift2{to{transform:translate(-16vmax,12vmax) scale(.85)}}
 @keyframes drift3{to{transform:translate(12vmax,-12vmax) scale(1.2)}}
-.au-grid{position:absolute;inset:-50% -20% 0;transform:rotateX(62deg) translateY(10%);transform-origin:50% 100%;background:linear-gradient(color-mix(in srgb,var(--c) 28%,transparent) 1px,transparent 1px) 0 0/54px 54px,linear-gradient(90deg,color-mix(in srgb,var(--c) 28%,transparent) 1px,transparent 1px) 0 0/54px 54px;-webkit-mask:linear-gradient(transparent 20%,#000 90%);mask:linear-gradient(transparent 20%,#000 90%);animation:gridMove 3.2s linear infinite;opacity:.55}
-@keyframes gridMove{to{background-position:0 54px,54px 0}}
+.au-grid{position:absolute;inset:-50% -20% 0;transform:perspective(700px) rotateX(62deg);transform-origin:50% 100%;background:linear-gradient(color-mix(in srgb,var(--c) 28%,transparent) 1px,transparent 1px) 0 0/54px 54px,linear-gradient(90deg,color-mix(in srgb,var(--c) 28%,transparent) 1px,transparent 1px) 0 0/54px 54px;-webkit-mask:linear-gradient(transparent 20%,#000 90%);mask:linear-gradient(transparent 20%,#000 90%);animation:gridMove 3.2s linear infinite;opacity:.55}
+@keyframes gridMove{from{transform:perspective(700px) rotateX(62deg) translateY(0)}to{transform:perspective(700px) rotateX(62deg) translateY(54px)}}
 .au-chart{position:absolute;left:0;right:0;bottom:6vh;width:100%;height:46vh;opacity:.9}
 .au-chart path{fill:none;stroke-width:3.5;stroke-linecap:round;vector-effect:non-scaling-stroke}
-.au-chart .line{stroke:url(#agL);stroke-dasharray:1;stroke-dashoffset:1;filter:drop-shadow(0 0 8px var(--c));animation:drawLine 9s ease-in-out infinite}
+.au-chart .line{stroke:url(#agL);stroke-dasharray:1;stroke-dashoffset:1;animation:drawLine 9s ease-in-out infinite}
 .au-chart .fill{stroke:none;fill:url(#agF);opacity:0;animation:fillIn 9s ease-in-out infinite}
 @keyframes drawLine{0%{stroke-dashoffset:1;opacity:1}45%,85%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}
 @keyframes fillIn{0%,20%{opacity:0}50%,85%{opacity:1}100%{opacity:0}}
@@ -206,26 +206,46 @@ label{font-size:12px;color:var(--mut);font-weight:600}
 .coin.c1{left:8%;top:14%}
 .coin.c3{right:9%;top:20%;width:44px;height:44px;background:radial-gradient(circle at 30% 28%,#d7efff,var(--blue) 55%,#0d5c92);color:#041626;box-shadow:0 10px 28px -6px var(--blue),inset 0 -3px 6px rgba(0,0,0,.25);animation-duration:8s;animation-delay:-5s}
 .coin.c4{right:14%;top:68%;width:32px;height:32px;font-size:10px;background:radial-gradient(circle at 30% 28%,#ffe0f0,#ff7ab6 55%,#a3225f);color:#2a0716;box-shadow:0 10px 24px -6px #ff7ab6;animation-duration:10s;animation-delay:-2s}
-@keyframes coin{0%,100%{transform:translateY(0) rotateY(0) rotateZ(-6deg)}50%{transform:translateY(-34px) rotateY(180deg) rotateZ(8deg)}}
-.au-card{position:relative;z-index:2;margin:auto;animation:cardIn 1s cubic-bezier(.2,.9,.2,1) both;box-shadow:0 40px 90px -40px color-mix(in srgb,var(--c) 70%,transparent),0 0 0 1px color-mix(in srgb,var(--ink) 6%,transparent) inset}
+@keyframes coin{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-30px) rotate(8deg)}}
+.au-card{position:relative;z-index:2;margin:auto;animation:cardIn 1s cubic-bezier(.2,.9,.2,1) both;box-shadow:0 30px 70px -40px var(--c)}
 #auth-screen{display:none}
-.au-card::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:2px;background:conic-gradient(from var(--ang),transparent 0 55%,var(--c),var(--v),var(--blue),#ff7ab6,transparent 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);animation:spin 5s linear infinite;pointer-events:none}
-@keyframes spin{to{--ang:360deg}}
-@keyframes cardIn{from{opacity:0;transform:translateY(40px) rotateX(14deg) scale(.94)}to{opacity:1;transform:none}}
+.au-card::before{content:"";position:absolute;z-index:-2;left:50%;top:50%;width:300%;aspect-ratio:1;transform:translate(-50%,-50%);background:conic-gradient(from 0deg,transparent 0 55%,var(--c),var(--v),var(--blue),#ff7ab6,transparent 100%);animation:spinr 6s linear infinite;pointer-events:none}
+.au-card::after{content:"";position:absolute;z-index:-1;inset:2px;border-radius:28px;background:var(--card)}
+@keyframes spinr{to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes cardIn{from{opacity:0;transform:translateY(32px) scale(.96)}to{opacity:1;transform:none}}
 .au-card>*{animation:rise .7s cubic-bezier(.2,.9,.2,1) both}
 .au-card>*:nth-child(2){animation-delay:.15s}.au-card>*:nth-child(3){animation-delay:.22s}.au-card>*:nth-child(4){animation-delay:.28s}.au-card>*:nth-child(5){animation-delay:.34s}.au-card>*:nth-child(6){animation-delay:.4s}.au-card>*:nth-child(7){animation-delay:.46s}.au-card>*:nth-child(8){animation-delay:.52s}.au-card>*:nth-child(n+9){animation-delay:.6s}
 @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 .au-logo{padding:8px;border-radius:20px;background:radial-gradient(circle,#e9fff6,#bff0dd);animation:rise .7s .05s both,logo 4s ease-in-out .8s infinite}
-@keyframes logo{0%,100%{transform:translateY(0) rotate(0);box-shadow:0 0 0 0 color-mix(in srgb,var(--c) 55%,transparent)}50%{transform:translateY(-5px) rotate(4deg);box-shadow:0 0 0 14px transparent}}
+@keyframes logo{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-5px) rotate(4deg)}}
 .au-field{transition:border-color .25s,box-shadow .25s,transform .25s}
 .au-field:focus-within{border-color:var(--c);box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 18%,transparent);transform:translateY(-1px)}
 .au-field:focus-within .ic{color:var(--c)}
 .au-main{position:relative;overflow:hidden;background-size:200% 100%;background-image:linear-gradient(110deg,var(--v),var(--c),var(--blue),var(--c),var(--v));animation:rise .7s .46s both,flow 6s linear infinite;box-shadow:0 14px 30px -14px var(--c)}
 .au-main::after{content:"";position:absolute;top:0;bottom:0;width:40%;left:-60%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-20deg);animation:shine 3.6s ease-in-out 1.4s infinite}
 @keyframes flow{to{background-position:-200% 0}}
-@keyframes shine{0%{left:-60%}55%,100%{left:130%}}
+@keyframes shine{0%{transform:skewX(-20deg) translateX(0)}55%,100%{transform:skewX(-20deg) translateX(450%)}}
 .au-main:active{transform:scale(.98)}
 @media(prefers-reduced-motion:reduce){.au-bg *,.au-card,.au-card>*,.au-card::before,.au-logo,.au-main,.au-main::after{animation:none!important}.au-bars i{transform:scaleY(.5)}.au-chart .line{stroke-dashoffset:0}.au-chart .fill{opacity:1}}
+.bk-list{max-height:46vh;overflow:auto;margin-top:10px}
+.bk-item{display:flex;flex-direction:column;gap:8px;padding:12px;margin-bottom:8px;border:1px solid var(--line);border-radius:18px;background:var(--card2)}
+.bk-item b{font-size:14px}.bk-item small{display:block;color:var(--mut);font-size:11px;margin-top:1px}
+.bk-btns{display:flex;gap:6px}.bk-btns button{flex:1;padding:9px 0;border-radius:999px;border:1px solid var(--line);background:var(--card);font-weight:600;font-size:12px}
+.bk-btns button[data-bk=rest]{background:linear-gradient(135deg,var(--v),var(--c));color:var(--onc);border-color:transparent}
+html.lite .blob,html.lite .au-grid,html.lite .coin,html.lite .au-card::before,html.lite .au-main,html.lite .au-main::after,html.lite .au-logo{animation:none!important}
+html.lite .au-bars i{animation-duration:9s}
+@supports not (color:color-mix(in srgb,red,blue)){
+body{background:var(--bg)}
+.tabs{background:var(--bg)}
+.tabs button.on{background:rgba(166,255,61,.14)}
+.cards .cd,.big,.chart-panel{background:var(--card)}
+.cards .cd b{color:var(--ink)}
+.cal-day.sel{background:rgba(128,128,128,.28)}
+.cal-badge{color:var(--ink)}
+.theme-choice[aria-pressed=true]{background:rgba(166,255,61,.14)}
+#auth-screen{background:var(--bg)}
+.au-grid{background:linear-gradient(rgba(61,220,151,.28) 1px,transparent 1px) 0 0/54px 54px,linear-gradient(90deg,rgba(61,220,151,.28) 1px,transparent 1px) 0 0/54px 54px}
+}
 </style>
 </head>
 <body>
@@ -336,6 +356,12 @@ label{font-size:12px;color:var(--mut);font-weight:600}
       <div class="settings-row"><p>Conta conectada</p><b id="settings-account" style="font-size:12px;overflow-wrap:anywhere;text-align:right"></b></div>
     </section>
     <section class="settings-section">
+      <h3>🛟 Backups automáticos</h3><p class="settings-help">A cada alteração o app guarda uma cópia na nuvem (no máximo uma a cada 10 minutos). Ficam todas as das últimas 48 horas e uma por dia até 45 dias. Você pode restaurar, baixar ou copiar qualquer uma.</p>
+      <div class="settings-row"><button class="settings-action" id="bk-load" type="button">Ver meus backups</button><button class="settings-action" id="bk-now" type="button">Criar agora</button></div>
+      <div class="settings-status" id="bk-status" aria-live="polite"></div>
+      <div class="bk-list" id="bk-list"></div>
+    </section>
+    <section class="settings-section">
       <h3>🗑️ Excluir conta</h3><p class="settings-help">A exclusão remove o cadastro de autenticação e os dados financeiros associados no banco deste aplicativo. É irreversível. O Firebase pode exigir que você entre novamente antes de concluir.</p>
       <button class="settings-action settings-danger" id="settings-delete" type="button">Excluir minha conta e meus dados</button>
       <div class="settings-status" id="settings-status" aria-live="polite"></div>
@@ -407,7 +433,8 @@ function fix() {
   }
 }
 
-var CLOUD = { saving: false, again: false, timer: null };
+var CLOUD = { saving: false, again: false, timer: null, ready: false, retry: null };
+function contaTxt() { var u = null; try { u = auth.currentUser; } catch(e) {} return u && u.email ? " · " + u.email : ""; }
 function lsKey() { return "plano-lastsync-" + (currentUserUid || "guest"); }
 function getLastSync() { try { return +localStorage.getItem(lsKey()) || 0; } catch(e) { return 0; } }
 function setLastSync(t) { try { localStorage.setItem(lsKey(), String(t)); } catch(e) {} }
@@ -439,12 +466,14 @@ function save() {
 
 function cloudPush() {
   if (!currentUserUid) return;
+  // Só grava na nuvem depois de conseguir LER a nuvem: assim um começo sem internet nunca sobrescreve seus dados.
+  if (!CLOUD.ready) { setSync("⚠️ Sem conexão com a nuvem. Suas alterações ficam só neste aparelho até a conexão voltar."); return; }
   if (CLOUD.saving) { CLOUD.again = true; return; }
   CLOUD.saving = true;
   var j = JSON.stringify(S), ts = S.ts || Date.now();
   db.collection("users").doc(currentUserUid).set({ json: j, ts: ts }).then(function(){
-    CLOUD.saving = false; setLastSync(ts);
-    if (CLOUD.again) { CLOUD.again = false; cloudPush(); } else setSync("☁️ Sincronizado com a nuvem às " + hora());
+    CLOUD.saving = false; setLastSync(ts); bkAgendar();
+    if (CLOUD.again) { CLOUD.again = false; cloudPush(); } else setSync("☁️ Sincronizado com a nuvem às " + hora() + contaTxt());
   }).catch(function(err){
     CLOUD.saving = false;
     setSync("⚠️ Erro ao salvar na nuvem: " + err.message);
@@ -463,7 +492,9 @@ function listenCloud(uid) {
     S = createEmptyState(); fix();
   }
 
+  CLOUD.ready = false; clearTimeout(CLOUD.retry);
   unsubscribeSync = db.collection("users").doc(uid).onSnapshot(function(doc){
+    CLOUD.ready = true;
     if (doc.exists) {
       var data = doc.data();
       try {
@@ -480,7 +511,7 @@ function listenCloud(uid) {
         }
         if (rem && (!hasLocalState || remoteTs >= (+S.ts || localTs))) {
           S = rem; S.ym = ymView || currentYM; fix(); CC = {}; MC = {}; saveLocal(); setLastSync(remoteTs); draw(); hasLocalState = true;
-          setSync("☁️ Dados atualizados da nuvem às " + hora());
+          setSync("☁️ Dados atualizados da nuvem às " + hora() + contaTxt());
         } else if (rem && (+S.ts || localTs) > remoteTs) {
           cloudPush(); draw();
           setSync("☁️ Enviando a versão local mais recente…");
@@ -492,8 +523,10 @@ function listenCloud(uid) {
       draw();
     }
   }, function(err){
-    setSync("⚠️ Modo offline: usando dados locais");
+    CLOUD.ready = false;
+    setSync("⚠️ Não consegui ler a nuvem (" + ((err && (err.code || err.message)) || "erro") + "). Seus dados da nuvem estão preservados; vou tentar de novo.");
     draw();
+    CLOUD.retry = setTimeout(function(){ if (currentUserUid === uid && !CLOUD.ready) listenCloud(uid); }, 10000);
   });
 }
 
@@ -615,7 +648,7 @@ function deleteCurrentAccount(){
   // Reautentica antes de apagar qualquer dado, para não deixar a conta ativa sem seus registros.
   reauthenticateIfNeeded().then(function(){
     status.textContent="Excluindo dados financeiros…";
-    return db.collection("users").doc(user.uid).delete();
+    return bkApagarTudo(user.uid).then(function(){ return db.collection("users").doc(user.uid).delete(); });
   }).then(function(){ return user.delete(); }).then(function(){
     try{localStorage.removeItem("plano-v2-"+user.uid);localStorage.removeItem("plano-palette-"+user.uid);}catch(e){}
     status.textContent="Conta excluída.";
@@ -646,7 +679,7 @@ function renderDashboardCharts(c, rs) {
   var gridColor = "rgba(139,152,147,.14)";
   var currency = function(v){ return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}); };
   var tip = function(cb){ return {backgroundColor:cCard, borderColor:cLine, borderWidth:1, cornerRadius:14, padding:12, titleColor:cInk, bodyColor:cInk, boxPadding:6, usePointStyle:true, callbacks:cb}; };
-  var glow = {id:"glow", beforeDatasetDraw:function(ch, a){ if (ch.config.type !== "line") return; ch.ctx.save(); ch.ctx.shadowColor = ch.data.datasets[a.index].borderColor; ch.ctx.shadowBlur = 14; }, afterDatasetDraw:function(ch){ if (ch.config.type === "line") ch.ctx.restore(); }};
+  var glow = {id:"glow", beforeDatasetDraw:function(ch, a){ if (ch.config.type !== "line") return; ch.ctx.save(); ch.ctx.shadowColor = ch.data.datasets[a.index].borderColor; ch.ctx.shadowBlur = 8; }, afterDatasetDraw:function(ch){ if (ch.config.type === "line") ch.ctx.restore(); }};
   var days = c.days || [];
   dashboardCharts.balance = new Chart(document.getElementById("balanceChart"), {
     type:"line",
@@ -680,6 +713,133 @@ function renderDashboardCharts(c, rs) {
   });
 }
 
+
+// ==========================================
+// BACKUPS AUTOMÁTICOS (subcoleções users/{uid}/backups e backupdata)
+// ==========================================
+var BK = { last: 0, timer: null, MIN: 10 * 60 * 1000 };
+function bkMeta() { return db.collection("users").doc(currentUserUid).collection("backups"); }
+function bkData() { return db.collection("users").doc(currentUserUid).collection("backupdata"); }
+function bkStatus(t) { var el = document.getElementById("bk-status"); if (el) el.textContent = t || ""; }
+function bkPad(n) { return ("0" + n).slice(-2); }
+function bkQuando(ts) { var d = new Date(ts); return bkPad(d.getDate()) + "/" + bkPad(d.getMonth() + 1) + " " + bkPad(d.getHours()) + ":" + bkPad(d.getMinutes()); }
+function bkRotulo(ts, agora) {
+  var m = Math.round(((agora || Date.now()) - ts) / 60000);
+  if (m < 1) return "agora há pouco";
+  if (m < 60) return "há " + m + " min";
+  var h = Math.round(m / 60);
+  if (h < 24) return "há " + h + (h === 1 ? " hora" : " horas");
+  var d = Math.round(h / 24);
+  return d === 1 ? "há 1 dia" : "há " + d + " dias";
+}
+function bkCriar(motivo) {
+  if (!currentUserUid) return Promise.resolve(false);
+  if (!CLOUD.ready) { bkStatus("⚠️ Sem conexão com a nuvem agora. Tente de novo em instantes."); return Promise.resolve(false); }
+  var ts = Date.now(), id = String(ts), j = JSON.stringify(S);
+  if (j.length > 900000) { bkStatus("⚠️ Os dados estão grandes demais para backup na nuvem."); return Promise.resolve(false); }
+  var b = db.batch();
+  b.set(bkData().doc(id), { json: j });
+  b.set(bkMeta().doc(id), { ts: ts, size: j.length, motivo: motivo || "auto", ym: S.ym });
+  return b.commit().then(function(){ BK.last = ts; return true; }).catch(function(e){
+    bkStatus("⚠️ Não consegui criar o backup (" + (e.code || e.message) + "). Confira se as regras do Firestore foram atualizadas.");
+    return false;
+  });
+}
+function bkAgendar() {
+  if (!currentUserUid) return;
+  clearTimeout(BK.timer);
+  BK.timer = setTimeout(function(){ bkCriar("auto").then(function(){ bkLimpeza(); }); }, Math.max(0, BK.last + BK.MIN - Date.now()));
+}
+function bkApagarRefs(refs) {
+  var p = Promise.resolve();
+  for (var i = 0; i < refs.length; i += 400) (function(part){
+    p = p.then(function(){ var b = db.batch(); part.forEach(function(r){ b.delete(r); }); return b.commit(); });
+  })(refs.slice(i, i + 400));
+  return p;
+}
+function bkLimpeza() {
+  if (!currentUserUid) return;
+  var k = "plano-bk-limpeza-" + currentUserUid, hoje = new Date().toISOString().slice(0, 10);
+  try { if (localStorage.getItem(k) === hoje) return; localStorage.setItem(k, hoje); } catch(e) {}
+  bkMeta().where("ts", "<", Date.now() - 48 * 3600 * 1000).orderBy("ts", "desc").get().then(function(q){
+    var agora = Date.now(), dias = {}, refs = [];
+    q.forEach(function(d){
+      var t = +d.id || 0, dt = new Date(t), dia = dt.getFullYear() + "-" + dt.getMonth() + "-" + dt.getDate();
+      if (agora - t > 45 * 86400000 || dias[dia]) { refs.push(d.ref); refs.push(bkData().doc(d.id)); } else dias[dia] = true;
+    });
+    return bkApagarRefs(refs);
+  }).catch(function(){});
+}
+function bkApagarTudo(uid) {
+  var base = db.collection("users").doc(uid);
+  return base.collection("backups").get().then(function(q){
+    var refs = []; q.forEach(function(d){ refs.push(d.ref); refs.push(base.collection("backupdata").doc(d.id)); });
+    return bkApagarRefs(refs);
+  });
+}
+function bkAfinar(lista, agora) {
+  var vistos = {}, out = [];
+  lista.forEach(function(x){
+    var idade = agora - x.ts, d = new Date(x.ts),
+        chave = idade < 2 * 3600000 ? "m" + x.ts : (idade < 48 * 3600000 ? "h" + Math.floor(x.ts / 3600000) : "d" + d.getFullYear() + d.getMonth() + d.getDate());
+    if (!vistos[chave]) { vistos[chave] = 1; out.push(x); }
+  });
+  return out;
+}
+function bkListar() {
+  if (!currentUserUid) return;
+  bkStatus("⏳ Carregando backups…");
+  bkMeta().orderBy("ts", "desc").limit(300).get().then(function(q){
+    var lista = []; q.forEach(function(d){ var x = d.data(); lista.push({ id: d.id, ts: +x.ts || +d.id, size: x.size || 0, motivo: x.motivo || "auto" }); });
+    var agora = Date.now(), v = bkAfinar(lista, agora), h = "";
+    v.forEach(function(x){
+      h += '<div class="bk-item"><div><b>' + bkRotulo(x.ts, agora) + '</b><small>' + bkQuando(x.ts) + ' · ' + Math.max(1, Math.round(x.size / 1024)) + ' KB · ' +
+        (x.motivo === "manual" ? "manual" : x.motivo === "antes-restaurar" ? "antes de restaurar" : "automático") + '</small></div>' +
+        '<div class="bk-btns"><button type="button" data-bk="rest" data-id="' + x.id + '">Restaurar</button><button type="button" data-bk="dl" data-id="' + x.id + '">Baixar</button><button type="button" data-bk="cp" data-id="' + x.id + '">Copiar</button></div></div>';
+    });
+    document.getElementById("bk-list").innerHTML = h;
+    bkStatus(v.length ? "Mostrando " + v.length + " backups (os mais recentes primeiro)." : "Ainda não há backups. Eles aparecem depois da próxima alteração.");
+  }).catch(function(e){ bkStatus("⚠️ Não consegui carregar os backups (" + (e.code || e.message) + "). Confira se as regras do Firestore foram atualizadas."); });
+}
+function bkBaixarTexto(nome, texto) {
+  try {
+    var url = URL.createObjectURL(new Blob([texto], { type: "application/json" })), a = document.createElement("a");
+    a.href = url; a.download = nome; document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1500);
+    return true;
+  } catch(e) { return false; }
+}
+function bkCopiarFallback(t) {
+  try { var ta = document.createElement("textarea"); ta.value = t; ta.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(ta); ta.select(); var ok = document.execCommand("copy"); document.body.removeChild(ta); return ok; } catch(e) { return false; }
+}
+function bkCopiarTexto(t) {
+  if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t).then(function(){ return true; }, function(){ return bkCopiarFallback(t); });
+  return Promise.resolve(bkCopiarFallback(t));
+}
+function bkAcao(acao, id) {
+  bkStatus("⏳ Buscando o backup…");
+  bkData().doc(id).get().then(function(d){
+    if (!d.exists) throw new Error("backup não encontrado");
+    var texto = d.data().json, ts = +id, nome = "planejamento-backup-" + new Date(ts).getFullYear() + bkPad(new Date(ts).getMonth() + 1) + bkPad(new Date(ts).getDate()) + "-" + bkPad(new Date(ts).getHours()) + bkPad(new Date(ts).getMinutes()) + ".json";
+    if (acao === "dl") { bkStatus(bkBaixarTexto(nome, texto) ? "✅ Arquivo gerado. Se o download não começar (alguns APKs bloqueiam), use \"Copiar\"." : "⚠️ Não foi possível baixar aqui. Use \"Copiar\"."); return; }
+    if (acao === "cp") { return bkCopiarTexto(texto).then(function(ok){ bkStatus(ok ? "✅ Backup copiado. Cole em um bloco de notas ou mensagem para guardar." : "⚠️ Não consegui copiar neste aparelho."); }); }
+    var nS = JSON.parse(texto);
+    if (!nS || !nS.bills || !nS.ym) throw new Error("backup inválido");
+    if (!confirm("Restaurar o backup de " + bkQuando(ts) + " (" + bkRotulo(ts) + ")?\n\nOs dados atuais serão substituídos. Antes disso o app guarda um backup dos dados de agora.")) { bkStatus(""); return; }
+    return bkCriar("antes-restaurar").then(function(ok){
+      if (!ok && !confirm("Não consegui guardar um backup dos dados atuais. Restaurar mesmo assim?")) return;
+      S = nS; S.ym = currentYM; fix(); S.start = S.start || S.ym; CC = {}; MC = {};
+      save(); closeSettings(); draw();
+      alert("Backup restaurado.");
+    });
+  }).catch(function(e){ bkStatus("⚠️ " + (e.code || e.message)); });
+}
+(function(){
+  var l = document.getElementById("bk-load"), n = document.getElementById("bk-now"), lst = document.getElementById("bk-list");
+  if (l) l.addEventListener("click", bkListar);
+  if (n) n.addEventListener("click", function(){ bkStatus("⏳ Criando backup…"); bkCriar("manual").then(function(ok){ if (ok) { bkStatus("✅ Backup criado às " + hora()); bkListar(); } }); });
+  if (lst) lst.addEventListener("click", function(e){ var b = e.target.closest && e.target.closest("button[data-bk]"); if (b) bkAcao(b.getAttribute("data-bk"), b.getAttribute("data-id")); });
+})();
 
 auth.onAuthStateChanged(function(user) {
   if (user) {
