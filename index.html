@@ -392,7 +392,7 @@ button { touch-action:manipulation; }
   .welcome-copy h1 { font-size:clamp(17px,4.5vw,22px); }
   .topbar-actions { gap:6px; }
   .logout-button { padding:8px 9px; }
-  .tabs { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:4px; padding:4px; overflow:visible; }
+  .tabs { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:4px; padding:4px; overflow:visible; }
   .tabs button { min-width:0; width:100%; padding:10px 2px; font-size:clamp(10px,2.6vw,13px); white-space:normal; }
   .cards { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .g2 { grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -2806,6 +2806,24 @@ function vCalendario() {
   return h;
 }
 
+function vAjuda() {
+  var h = '<div class="card"><h2>📘 Como funciona o Planejamento Financeiro</h2><p>Imagine que o aplicativo é um caderno que ajuda a organizar seu dinheiro. Ele faz contas usando o que você informa. Se você mudar uma renda, uma conta ou uma data, várias partes podem mudar juntas.</p></div>';
+  function card(title, body, link) {
+    return '<div class="card" style="margin-top:10px"><h3 style="margin:0 0 8px">'+title+'</h3><div class="note" style="line-height:1.65">'+body+'</div>'+(link?'<button class="add" data-a="tab" data-i="'+link+'">Abrir esta aba →</button>':'')+'</div>';
+  }
+  h += card('1. Renda — de onde vem o dinheiro','Aqui você cadastra quanto recebe e quando recebe. A diária, salário quinzenal, mensal ou renda extra é a origem do dinheiro do planejamento. O app usa esses valores para estimar o que entrará em cada dia.','0');
+  h += card('2. Mês — visão geral','É como olhar o mês inteiro de uma vez. Mostra o que está previsto entrar, quanto deve ir para as contas, o que já foi marcado como pago e quanto pode sobrar. É uma previsão: se uma renda não entrar ou uma conta mudar, o resultado muda também.','1');
+  h += card('3. Calendário — cada dia tem sua tarefa','Mostra em que dia você trabalha, recebe e tem contas. Quando marca um recebimento ou pagamento, a marcação ajuda o planejamento a atualizar os números. Vencimento é o dia limite da conta; pagamento real é o dia em que você pagou. Se pagar antes, o registro deve usar o dia real para não descontar duas vezes.','2');
+  h += card('4. Saldo — acompanhar o dinheiro','O gráfico mostra a previsão do Pote das contas e do dinheiro disponível para você ao longo do mês. Pense nele como uma régua que mostra o saldo estimado em cada dia. A previsão não significa que o dinheiro já está na sua carteira ou banco. O extrato registra movimentos confirmados; não confunda previsão com saldo real.','3');
+  h += card('5. Contas — para onde o dinheiro vai','Cadastre as despesas, seus valores e vencimentos. O app distribui as contas pelo calendário e calcula o quanto precisa ficar reservado. Quando marcar como paga, deve considerar a saída uma única vez.','4');
+  h += card('Como as abas se conectam','Renda fornece os valores de entrada. O Mês junta entradas e despesas e calcula o resultado. O Calendário coloca cada coisa na data. O Saldo mostra como os valores evoluem. Contas informa o que precisa ser pago. Por isso, uma alteração em uma aba pode mudar outras.');
+  h += card('Previsto × real — uma diferença importante','Previsto é o que o app espera que aconteça. Real é o que realmente aconteceu e foi confirmado por você. Exemplo: o app prevê receber R$ 100 amanhã; esse valor é previsão. Só depois de receber, você confirma e ele passa a ser uma informação real.');
+  h += card('Como usar sem se confundir','1) Cadastre suas rendas. 2) Cadastre todas as contas. 3) Confira o calendário. 4) Quando receber, marque o recebimento. 5) Quando pagar, marque o pagamento e informe a data real se pagou antes. 6) Confira o Mês e o Saldo. Se algo não bater, ajuste o saldo real, não invente uma movimentação.');
+  h += '<div class="card" style="margin-top:10px;border-color:var(--warn,#d97706)"><b>⚠️ Atenção</b><div class="note">O app é uma ferramenta de organização, não acessa automaticamente sua conta bancária. Os resultados dependem dos valores e confirmações que você cadastrar.</div></div>';
+  return h;
+}
+
+
 function draw() {
   CC = {}; MC = {};
   var navItems = [
@@ -2813,13 +2831,14 @@ function draw() {
     {name:"Mês", icon:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="16" rx="3"/><path d="M8 2.8v3.5M16 2.8v3.5M3.5 9h17M8 13h2M14 13h2M8 16.5h2"/></svg>'},
     {name:"Calendário", icon:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="16" rx="3"/><path d="M8 2.8v3.5M16 2.8v3.5M3.5 9h17M8 13h2M14 13h2M8 16.5h2M14 16.5h2"/></svg>'},
     {name:"Saldo", icon:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 19.5h17M5.5 17V10h4v7M10.5 17V5h4v12M15.5 17v-4h4v4"/></svg>'},
-    {name:"Contas", icon:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="3"/><path d="M3.5 9.5h17M7 14h4"/></svg>'}
+    {name:"Contas", icon:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="3"/><path d="M3.5 9.5h17M7 14h4"/></svg>'},
+    {name:"Ajuda", icon:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1.2.8-1.5 1.4-1.5 2.5M12 17h.01"/></svg>'}
   ];
   document.getElementById("tabs").innerHTML = navItems.map(function(item,i){
     return '<button data-a="tab" data-i="'+i+'" class="'+(i==tab?"on":"")+'" aria-label="'+item.name+'"><span class="tab-icon">'+item.icon+'</span><span class="tab-label">'+item.name+'</span></button>';
   }).join("");
   fixBottomNavigation();
-  document.getElementById("view").innerHTML = [vRenda, vMes, vCalendario, vSaldo, vContas][tab]();
+  document.getElementById("view").innerHTML = [vRenda, vMes, vCalendario, vSaldo, vContas, vAjuda][tab]();
   if (tab === 1) {
     var chartCalc = calc();
     renderDashboardCharts(chartCalc, RS(chartCalc));
