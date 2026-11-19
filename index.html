@@ -2252,22 +2252,6 @@ function vMes() {
        (Math.abs(mc) > 0.005 ? '<br>Inclui ' + R(mc) + ' que sobrou dos meses anteriores.' : '') + '</div>' +
        '<div class="attention-note"><b>⚠ Ponto de atenção:</b> a sobra final é uma projeção matemática. Ela pode mudar se você alterar valores, datas, recebimentos, pagamentos ou gastos pessoais.</div>';
 
-  if (ic("tipoRenda") === "diaria") {
-    h += '<div class="big">Em cada diária de ' + R(ic("dia")) + ': separe <b>' + R(c.g) + '</b> pro pote das contas e fique com <b>' + R(ic("dia") - c.g) + '</b> pra você.<small style="display:block;color:var(--mut);font-size:12px;margin-top:4px">Já inclui 20% de folga pro mês que vem.' +
-         (c.gAdj && !c.rd ? '<br>Ajustei de ' + R(c.g0) + ' pra ' + R(c.g) + ' porque ' + c.missN + ' diária(s) que já passaram não estão marcadas como recebidas. Marque as que você recebeu.' : '') +
-         '</small></div>';
-  } else if (ic("tipoRenda") === "quinzena") {
-    h += '<div class="big">Renda Quinzenal: Cada quinzena entra <b>' + R(ic("valQuinzena")) + '</b> (dias ' + ic("diaQ1") + ' e ' + ic("diaQ2") + ').</div>';
-  } else if (ic("tipoRenda") === "mes") {
-    h += '<div class="big">Salário Mensal: Entra <b>' + R(ic("valMes")) + '</b> no dia ' + ic("diaMes") + '.</div>';
-  }
-
-  if (c.seps && c.seps.length) {
-    c.seps.forEach(function(x){
-      h += '<div class="note">Dia ' + x.d + ': ao receber ' + R(x.amt) + ', separe <b>' + R(x.sep) + '</b> pro pote e fique com <b>' + R(x.keep) + '</b>.</div>';
-    });
-  }
-
   var ban = "", td1 = isCurrentMonth ? td.getDate() : 1,
       fut = (c.days0 || []).filter(function(x){ return x.sh > 0.005 && x.d >= td1; }),
       pas = (c.days0 || []).filter(function(x){ return x.sh > 0.005 && x.d < td1; }),
@@ -2285,6 +2269,20 @@ function vMes() {
     ban += '<div class="card" style="border-color:var(--v)">ℹ️ <b>Daqui pra frente os vencimentos estão cobertos.</b> Pelo que está marcado, o pote ficou curto no dia ' + pas[0].d + ' (já passou). Marque as diárias que você recebeu ou diga logo abaixo quanto tem hoje, que eu refaço o plano.</div>';
   } else {
     ban += '<div class="okb">✅ <b>O pote cobre tudo.</b> Todos os vencimentos do mês estão garantidos só com o que você separa, sem tirar nada da sobra. No fim do mês ficam <b>' + R(c.endMim) + '</b> livres pra você' + (c.endPote > 0.005 ? ' e ' + R(c.endPote) + ' de folga no pote pro mês que vem' : '') + '.</div>';
+  }
+  if (ic("tipoRenda") === "diaria") {
+    ban += '<div class="big" style="margin-top:10px">Em cada diária de ' + R(ic("dia")) + ': separe <b>' + R(c.g) + '</b> pro pote das contas e fique com <b>' + R(ic("dia") - c.g) + '</b> pra você.<small style="display:block;color:var(--mut);font-size:12px;margin-top:4px">Já inclui 20% de folga pro mês que vem.' +
+         (c.gAdj && !c.rd ? '<br>Ajustei de ' + R(c.g0) + ' pra ' + R(c.g) + ' porque ' + c.missN + ' diária(s) que já passaram não estão marcadas como recebidas. Marque as que você recebeu.' : '') +
+         '</small></div>';
+  } else if (ic("tipoRenda") === "quinzena") {
+    ban += '<div class="big" style="margin-top:10px">Renda Quinzenal: Cada quinzena entra <b>' + R(ic("valQuinzena")) + '</b> (dias ' + ic("diaQ1") + ' e ' + ic("diaQ2") + ').</div>';
+  } else if (ic("tipoRenda") === "mes") {
+    ban += '<div class="big" style="margin-top:10px">Salário Mensal: Entra <b>' + R(ic("valMes")) + '</b> no dia ' + ic("diaMes") + '.</div>';
+  }
+  if (c.seps && c.seps.length) {
+    c.seps.forEach(function(x){
+      ban += '<div class="note" style="margin-top:6px">Dia ' + x.d + ': ao receber ' + R(x.amt) + ', separe <b>' + R(x.sep) + '</b> pro pote e fique com <b>' + R(x.keep) + '</b>.</div>';
+    });
   }
   var nx = (c.bl || []).filter(function(q){ return !S.paid[S.ym + q.id] && (!isCurrentMonth || q.d >= td.getDate()); })[0];
   if (nx) ban += '<div class="note" style="margin-top:-4px">Próximo vencimento: <b>' + nx.n + '</b> · dia ' + nx.d + ' · ' + R(nx.a) + ' · o pote terá ' + R(nx.before) + '</div>';
