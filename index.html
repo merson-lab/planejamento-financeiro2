@@ -1271,12 +1271,45 @@ html[data-palette="light"] #tabs.tabs button.on {
 /* Runtime JS sets exact viewport geometry; this CSS is a no-script fallback. */
 #tabs.tabs { inset:auto 0 0 0 !important; width:auto !important; max-width:none !important; transform:none !important; }
 @media(min-width:761px){ #tabs.tabs { inset:auto auto 0 50% !important; width:min(100%,1180px) !important; transform:translateX(-50%) !important; } }
+
+/* LOGIN MOTION — premium financial dashboard */
+#auth-screen { position:relative; isolation:isolate; overflow:hidden; background:radial-gradient(ellipse at 50% 30%,rgba(32,197,138,.12),transparent 48%); }
+#auth-screen::before { content:""; position:absolute; inset:-30%; z-index:-2; background:conic-gradient(from 0deg at 50% 50%,transparent 0 22%,rgba(32,197,138,.08) 28%,transparent 36% 58%,rgba(90,240,181,.07) 64%,transparent 72%); animation:auth-sweep 32s linear infinite; }
+#auth-screen::after { content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; background:radial-gradient(circle at 18% 25%,rgba(32,197,138,.16),transparent 22%),radial-gradient(circle at 82% 72%,rgba(139,156,251,.12),transparent 24%); }
+.auth-orbit { position:absolute; width:min(78vw,620px); aspect-ratio:1; border:1px solid rgba(70,220,164,.12); border-radius:50%; left:50%; top:50%; transform:translate(-50%,-50%); z-index:-1; pointer-events:none; animation:auth-orbit-breathe 7s ease-in-out infinite; }
+.auth-orbit::before,.auth-orbit::after { content:""; position:absolute; border:1px solid rgba(70,220,164,.08); border-radius:50%; inset:12%; }
+.auth-orbit::after { inset:25%; border-color:rgba(139,156,251,.08); }
+.auth-particle { position:absolute; width:5px;height:5px;border-radius:50%;background:#48dfaa;box-shadow:0 0 14px rgba(72,223,170,.7); z-index:-1; pointer-events:none; }
+.auth-particle.p1 { left:18%;top:22%; animation:auth-float-a 8s ease-in-out infinite; }
+.auth-particle.p2 { right:16%;top:38%; background:#a5b2ff;box-shadow:0 0 14px rgba(165,178,255,.6); animation:auth-float-b 9s ease-in-out infinite; }
+.auth-particle.p3 { left:28%;bottom:20%; animation:auth-float-b 7s ease-in-out infinite reverse; }
+.au-card { position:relative; overflow:hidden; animation:auth-card-enter .75s cubic-bezier(.2,.8,.2,1) both; }
+.au-card::before { content:""; position:absolute; left:-70%; top:0; width:48%; height:100%; pointer-events:none; background:linear-gradient(100deg,transparent,rgba(83,225,171,.06),transparent); transform:skewX(-18deg); animation:auth-card-sheen 9s ease-in-out 1.2s infinite; }
+.au-logo { filter:drop-shadow(0 0 10px rgba(32,197,138,.22)); animation:auth-logo-pulse 4.5s ease-in-out infinite; }
+.au-field input { transition:border-color .25s,box-shadow .25s,transform .25s; }
+.au-field input:focus { box-shadow:0 0 0 5px rgba(32,197,138,.09); transform:translateY(-1px); }
+.au-main { position:relative; overflow:hidden; transition:filter .25s,box-shadow .25s,transform .25s; box-shadow:0 8px 24px rgba(32,197,138,.12); }
+.au-main:hover { filter:brightness(1.08); box-shadow:0 12px 32px rgba(32,197,138,.22); transform:translateY(-1px); }
+.au-main::after { content:""; position:absolute; inset:0; background:linear-gradient(110deg,transparent 25%,rgba(255,255,255,.25),transparent 70%); transform:translateX(-130%); animation:auth-button-glint 5.5s ease-in-out infinite; }
+.au-google { transition:border-color .25s,background .25s,transform .25s; }
+.au-google:hover { border-color:rgba(72,223,170,.6); background:#10251b; transform:translateY(-1px); }
+@keyframes auth-sweep { to { transform:rotate(360deg); } }
+@keyframes auth-orbit-breathe { 0%,100% { opacity:.55; transform:translate(-50%,-50%) scale(.98); } 50% { opacity:1; transform:translate(-50%,-50%) scale(1.02); } }
+@keyframes auth-float-a { 0%,100% { transform:translate(0,0); opacity:.45; } 50% { transform:translate(20px,28px); opacity:1; } }
+@keyframes auth-float-b { 0%,100% { transform:translate(0,0); opacity:.4; } 50% { transform:translate(-18px,-22px); opacity:.9; } }
+@keyframes auth-card-enter { from { opacity:0; transform:translateY(18px) scale(.985); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes auth-card-sheen { 0%,65%,100% { transform:translateX(0) skewX(-18deg); opacity:0; } 75% { opacity:1; } 95% { transform:translateX(320%) skewX(-18deg); opacity:0; } }
+@keyframes auth-logo-pulse { 0%,100% { transform:translateY(0) rotate(0); } 50% { transform:translateY(-3px) rotate(2deg); } }
+@keyframes auth-button-glint { 0%,70%,100% { transform:translateX(-130%); } 85% { transform:translateX(130%); } }
+@media (max-width:600px) { #auth-screen { padding:18px 14px; } .auth-orbit { width:95vw; } .au-card { padding:28px 20px 24px; } }
+@media (prefers-reduced-motion:reduce) { #auth-screen::before,.auth-orbit,.auth-particle,.au-card,.au-card::before,.au-logo,.au-main::after { animation:none!important; } .au-field input,.au-main,.au-google { transition:none!important; } }
 </style>
 </head>
 <body>
 
 <!-- TELA DE LOGIN / CRIAR CONTA -->
 <div id="auth-screen" style="display:none;">
+  <div class="auth-orbit" aria-hidden="true"></div><span class="auth-particle p1" aria-hidden="true"></span><span class="auth-particle p2" aria-hidden="true"></span><span class="auth-particle p3" aria-hidden="true"></span>
   <div class="au-card">
     <svg class="au-logo" viewBox="0 0 64 64" aria-hidden="true"><g transform="rotate(-35 32 32)"><rect x="5" y="15" width="40" height="15" rx="7.5" fill="#1d6b63"/><rect x="19" y="34" width="40" height="15" rx="7.5" fill="#3fa79b"/></g></svg>
     <h2 id="auth-title">Bem-vindo de volta</h2>
@@ -2664,7 +2697,14 @@ function parseMoney(v) { var z = String(v == null ? "" : v).trim().replace(/\s/g
 function escHTML(v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
 function registrarMovimento(tipo, descricao, valor, data, ref) {
   S.movimentos = Array.isArray(S.movimentos) ? S.movimentos : [];
-  S.movimentos.push({id:Date.now() + Math.floor(Math.random()*1000), tipo:tipo, descricao:descricao, valor:valor, data:data, ref:ref || null});
+  // Idempotência: se uma referência de origem já existe, não cria outra cópia.
+  if (ref && S.movimentos.some(function(m){ return m && m.ref === ref; })) return false;
+  var id = Date.now() + Math.floor(Math.random()*1000);
+  while (S.movimentos.some(function(m){ return m && m.id === id; })) id++;
+  var v = Number(valor);
+  if (!isFinite(v)) return false;
+  S.movimentos.push({id:id, tipo:tipo, descricao:String(descricao || "Movimentação"), valor:v, data:data || dataLocalISO(), ref:ref || null});
+  return true;
 }
 
 // Converte uma alteração real de recebimento/pagamento em lançamento do extrato.
@@ -2707,8 +2747,18 @@ function sincronizarMovimentosPagos(antes, depois) {
     var detalhe = detalhePagamento(key);
     if (!detalhe || Math.abs(detalhe.valor) < 0.005) return;
     var valor = depois[key] ? detalhe.valor : -detalhe.valor;
+    // Reutiliza uma referência estável por sequência de transições daquela chave.
+    // Reexecutar a sincronização não duplica o mesmo pagamento/estorno.
+    var prefixRef = "pagamento:" + key + ":", estadoMov = depois[key] ? "pago" : "estorno";
+    var ult = null;
+    (S.movimentos || []).forEach(function(m){ if (m && typeof m.ref === "string" && m.ref.indexOf(prefixRef) === 0 && (!ult || (+m.id || 0) > (+ult.id || 0))) ult = m; });
+    // Se a última transição desta conta já corresponde ao estado atual, é duplicada.
+    if (ult && ult.ref.indexOf(prefixRef + estadoMov + ":") === 0) return;
+    var baseRef = prefixRef + estadoMov + ":", seq = 1;
+    while (S.movimentos.some(function(m){ return m && m.ref === baseRef + seq; })) seq++;
+    var refMov = baseRef + seq;
     registrarMovimento(depois[key] ? detalhe.tipo : "estorno", depois[key] ? detalhe.desc : "Estorno — " + detalhe.desc,
-      valor, (depois[key] && S.paidAt && S.paidAt[key]) ? S.paidAt[key] : dataLocalISO(), key + (depois[key] ? "#pago#" : "#estorno#") + Date.now());
+      valor, (depois[key] && S.paidAt && S.paidAt[key]) ? S.paidAt[key] : dataLocalISO(), refMov);
   });
 }
 
