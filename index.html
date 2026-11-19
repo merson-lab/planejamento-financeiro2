@@ -109,10 +109,6 @@ label{font-size:12px;color:var(--mut);font-weight:600}
 .cal-num{font-size:16px;line-height:1}
 .cal-day.sel{background:color-mix(in srgb,var(--ink) 12%,transparent)}
 .cal-day.hj .cal-num{color:var(--blue);font-weight:600}
-.cal-dots{display:flex;gap:3px;justify-content:center;flex-wrap:wrap;min-height:6px}
-.cal-badge{width:6px;height:6px;border-radius:50%;font-size:0;color:transparent;overflow:hidden;display:inline-block}
-.cal-badge.in,.cal-badge.wk{background:#2fa36b}.cal-badge.out{background:#f2b84b}
-.cal-day.hj .cal-dots::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--blue)}
 /* gráficos */
 .charts-grid{display:grid;grid-template-columns:1fr;gap:12px;margin:14px 0}
 .chart-panel.wide{grid-column:1/-1}.chart-panel{margin:0}
@@ -157,12 +153,99 @@ label{font-size:12px;color:var(--mut);font-weight:600}
 .settings-status{font-size:12px;color:var(--mut);margin-top:8px}
 @media(max-width:380px){.cards{grid-template-columns:1fr}.logout-button{display:none}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* ===== calendário com nomes ===== */
+.cal-grid{padding:14px 4px}
+.cal-day{min-height:66px;padding:8px 0 4px;gap:4px}
+.cal-dots{flex-direction:column;align-items:stretch;gap:2px;width:100%;padding:0 2px;min-height:6px;flex-wrap:nowrap}
+.cal-badge{position:relative;display:block;width:auto;height:auto;border-radius:0;background:none!important;padding-left:9px;font-size:8px;line-height:1.3;font-weight:600;color:color-mix(in srgb,var(--ink) 80%,transparent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
+.cal-badge::before{content:"";position:absolute;left:1px;top:50%;margin-top:-3px;width:6px;height:6px;border-radius:50%;background:#2fa36b}
+.cal-badge.out::before{background:#f2b84b}
+.cal-day.hj .cal-dots::before{content:"";align-self:center;width:6px;height:6px;border-radius:50%;background:var(--blue);box-shadow:0 0 8px var(--blue)}
+@media(min-width:560px){.cal-badge{font-size:10px;padding-left:11px}.cal-badge::before{width:7px;height:7px;margin-top:-3.5px}.cal-day{min-height:84px}}
+/* ===== cartões coloridos ===== */
+.cards .cd{--t:#3ddc97;position:relative;overflow:hidden;background:radial-gradient(130% 100% at 0% 0%,color-mix(in srgb,var(--t) 24%,transparent),transparent 62%),var(--card);border-color:color-mix(in srgb,var(--t) 28%,var(--line))}
+.cards .cd::after{content:"";position:absolute;left:14px;right:14px;top:0;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--t),transparent)}
+.cards .cd:nth-child(6n+2){--t:#34a8f0}.cards .cd:nth-child(6n+3){--t:#f2b84b}.cards .cd:nth-child(6n+4){--t:#ff7ab6}.cards .cd:nth-child(6n+5){--t:#b49aff}.cards .cd:nth-child(6n+6){--t:#a6ff3d}
+.cards .cd b{color:color-mix(in srgb,var(--t) 55%,var(--ink))}
+.big{position:relative;overflow:hidden;background:radial-gradient(90% 120% at 100% 0%,color-mix(in srgb,var(--v) 22%,transparent),transparent 60%),radial-gradient(90% 120% at 0% 100%,color-mix(in srgb,var(--blue) 18%,transparent),transparent 60%),var(--card)}
+/* ===== painéis de gráfico ===== */
+.chart-panel{position:relative;overflow:hidden;padding:18px;border-radius:26px;border-color:color-mix(in srgb,var(--c) 26%,var(--line));background:radial-gradient(80% 60% at 100% 0%,color-mix(in srgb,var(--c) 16%,transparent),transparent 70%),radial-gradient(70% 60% at 0% 100%,color-mix(in srgb,var(--blue) 12%,transparent),transparent 70%),var(--card);box-shadow:0 24px 50px -34px var(--c)}
+.chart-panel::before{content:"";position:absolute;left:18px;right:18px;top:0;height:3px;border-radius:0 0 4px 4px;background:linear-gradient(90deg,var(--c),var(--v),var(--blue),#ff7ab6)}
+.chart-panel:nth-child(3)::before{background:linear-gradient(90deg,#b49aff,#34a8f0,var(--c))}
+.chart-panel:nth-child(4)::before{background:linear-gradient(90deg,#f2b84b,#ff7ab6,#b49aff)}
+.chart-title{display:flex;align-items:center;gap:8px}
+.chart-title::before{content:"";width:10px;height:10px;border-radius:50%;background:conic-gradient(var(--c),var(--v),var(--blue),var(--c));box-shadow:0 0 10px var(--c)}
+.chart-wrap canvas{filter:drop-shadow(0 6px 14px color-mix(in srgb,var(--c) 18%,transparent))}
+/* ===== login animado ===== */
+@property --ang{syntax:"<angle>";initial-value:0deg;inherits:false}
+#auth-screen[style*="block"],#auth-screen[style*="flex"]{position:fixed!important;inset:0;z-index:60;overflow:auto;perspective:900px}
+.au-bg{position:fixed;inset:0;overflow:hidden;z-index:0;pointer-events:none}
+.au-bg .blob{position:absolute;width:62vmax;height:62vmax;border-radius:50%;filter:blur(70px);opacity:.5;will-change:transform}
+.blob.b1{background:radial-gradient(circle,var(--c),transparent 65%);left:-22vmax;top:-20vmax;animation:drift1 16s ease-in-out infinite alternate}
+.blob.b2{background:radial-gradient(circle,var(--v),transparent 65%);right:-26vmax;top:8vmax;opacity:.32;animation:drift2 19s ease-in-out infinite alternate}
+.blob.b3{background:radial-gradient(circle,#34a8f0,transparent 65%);left:-10vmax;bottom:-30vmax;opacity:.38;animation:drift3 22s ease-in-out infinite alternate}
+.blob.b4{background:radial-gradient(circle,#8b5cf6,transparent 65%);right:-20vmax;bottom:-28vmax;opacity:.3;animation:drift1 25s ease-in-out infinite alternate-reverse}
+@keyframes drift1{to{transform:translate(14vmax,10vmax) scale(1.15)}}
+@keyframes drift2{to{transform:translate(-16vmax,12vmax) scale(.85)}}
+@keyframes drift3{to{transform:translate(12vmax,-12vmax) scale(1.2)}}
+.au-grid{position:absolute;inset:-50% -20% 0;transform:rotateX(62deg) translateY(10%);transform-origin:50% 100%;background:linear-gradient(color-mix(in srgb,var(--c) 28%,transparent) 1px,transparent 1px) 0 0/54px 54px,linear-gradient(90deg,color-mix(in srgb,var(--c) 28%,transparent) 1px,transparent 1px) 0 0/54px 54px;-webkit-mask:linear-gradient(transparent 20%,#000 90%);mask:linear-gradient(transparent 20%,#000 90%);animation:gridMove 3.2s linear infinite;opacity:.55}
+@keyframes gridMove{to{background-position:0 54px,54px 0}}
+.au-chart{position:absolute;left:0;right:0;bottom:6vh;width:100%;height:46vh;opacity:.9}
+.au-chart path{fill:none;stroke-width:3.5;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.au-chart .line{stroke:url(#agL);stroke-dasharray:1;stroke-dashoffset:1;filter:drop-shadow(0 0 8px var(--c));animation:drawLine 9s ease-in-out infinite}
+.au-chart .fill{stroke:none;fill:url(#agF);opacity:0;animation:fillIn 9s ease-in-out infinite}
+@keyframes drawLine{0%{stroke-dashoffset:1;opacity:1}45%,85%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}
+@keyframes fillIn{0%,20%{opacity:0}50%,85%{opacity:1}100%{opacity:0}}
+.au-bars{position:absolute;left:0;right:0;bottom:0;height:22vh;display:flex;align-items:flex-end;justify-content:space-around;padding:0 3vw;gap:1.2vw}
+.au-bars i{flex:1;max-width:46px;height:100%;border-radius:12px 12px 0 0;background:linear-gradient(180deg,color-mix(in srgb,var(--c) 55%,transparent),transparent);transform-origin:bottom;transform:scaleY(.2);animation:bar 4.5s ease-in-out infinite alternate;animation-delay:calc(var(--i)*-.55s)}
+.au-bars i:nth-child(3n+2){background:linear-gradient(180deg,color-mix(in srgb,var(--blue) 50%,transparent),transparent)}
+.au-bars i:nth-child(3n){background:linear-gradient(180deg,color-mix(in srgb,#f2b84b 50%,transparent),transparent)}
+@keyframes bar{0%{transform:scaleY(.18)}100%{transform:scaleY(calc(.45 + var(--h)*.5))}}
+.coin{position:absolute;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:14px;color:#1b1300;background:radial-gradient(circle at 30% 28%,#fff3b8,#f2b84b 55%,#b9790f);box-shadow:0 10px 30px -6px rgba(242,184,75,.6),inset 0 -4px 8px rgba(0,0,0,.25);animation:coin 7s ease-in-out infinite}
+.coin.c2{width:38px;height:38px;font-size:11px;left:12%;top:62%;background:radial-gradient(circle at 30% 28%,#d8ffec,var(--c) 55%,#12744c);color:#04170e;box-shadow:0 10px 26px -6px var(--c),inset 0 -3px 6px rgba(0,0,0,.25);animation-duration:9s;animation-delay:-3s}
+.coin.c1{left:8%;top:14%}
+.coin.c3{right:9%;top:20%;width:44px;height:44px;background:radial-gradient(circle at 30% 28%,#d7efff,var(--blue) 55%,#0d5c92);color:#041626;box-shadow:0 10px 28px -6px var(--blue),inset 0 -3px 6px rgba(0,0,0,.25);animation-duration:8s;animation-delay:-5s}
+.coin.c4{right:14%;top:68%;width:32px;height:32px;font-size:10px;background:radial-gradient(circle at 30% 28%,#ffe0f0,#ff7ab6 55%,#a3225f);color:#2a0716;box-shadow:0 10px 24px -6px #ff7ab6;animation-duration:10s;animation-delay:-2s}
+@keyframes coin{0%,100%{transform:translateY(0) rotateY(0) rotateZ(-6deg)}50%{transform:translateY(-34px) rotateY(180deg) rotateZ(8deg)}}
+.au-card{position:relative;z-index:2;margin:auto;animation:cardIn 1s cubic-bezier(.2,.9,.2,1) both;box-shadow:0 40px 90px -40px color-mix(in srgb,var(--c) 70%,transparent),0 0 0 1px color-mix(in srgb,var(--ink) 6%,transparent) inset}
+#auth-screen{display:none}
+.au-card::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:2px;background:conic-gradient(from var(--ang),transparent 0 55%,var(--c),var(--v),var(--blue),#ff7ab6,transparent 100%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);animation:spin 5s linear infinite;pointer-events:none}
+@keyframes spin{to{--ang:360deg}}
+@keyframes cardIn{from{opacity:0;transform:translateY(40px) rotateX(14deg) scale(.94)}to{opacity:1;transform:none}}
+.au-card>*{animation:rise .7s cubic-bezier(.2,.9,.2,1) both}
+.au-card>*:nth-child(2){animation-delay:.15s}.au-card>*:nth-child(3){animation-delay:.22s}.au-card>*:nth-child(4){animation-delay:.28s}.au-card>*:nth-child(5){animation-delay:.34s}.au-card>*:nth-child(6){animation-delay:.4s}.au-card>*:nth-child(7){animation-delay:.46s}.au-card>*:nth-child(8){animation-delay:.52s}.au-card>*:nth-child(n+9){animation-delay:.6s}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.au-logo{padding:8px;border-radius:20px;background:radial-gradient(circle,#e9fff6,#bff0dd);animation:rise .7s .05s both,logo 4s ease-in-out .8s infinite}
+@keyframes logo{0%,100%{transform:translateY(0) rotate(0);box-shadow:0 0 0 0 color-mix(in srgb,var(--c) 55%,transparent)}50%{transform:translateY(-5px) rotate(4deg);box-shadow:0 0 0 14px transparent}}
+.au-field{transition:border-color .25s,box-shadow .25s,transform .25s}
+.au-field:focus-within{border-color:var(--c);box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 18%,transparent);transform:translateY(-1px)}
+.au-field:focus-within .ic{color:var(--c)}
+.au-main{position:relative;overflow:hidden;background-size:200% 100%;background-image:linear-gradient(110deg,var(--v),var(--c),var(--blue),var(--c),var(--v));animation:rise .7s .46s both,flow 6s linear infinite;box-shadow:0 14px 30px -14px var(--c)}
+.au-main::after{content:"";position:absolute;top:0;bottom:0;width:40%;left:-60%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-20deg);animation:shine 3.6s ease-in-out 1.4s infinite}
+@keyframes flow{to{background-position:-200% 0}}
+@keyframes shine{0%{left:-60%}55%,100%{left:130%}}
+.au-main:active{transform:scale(.98)}
+@media(prefers-reduced-motion:reduce){.au-bg *,.au-card,.au-card>*,.au-card::before,.au-logo,.au-main,.au-main::after{animation:none!important}.au-bars i{transform:scaleY(.5)}.au-chart .line{stroke-dashoffset:0}.au-chart .fill{opacity:1}}
 </style>
 </head>
 <body>
 
 <!-- TELA DE LOGIN / CRIAR CONTA -->
 <div id="auth-screen" style="display:none;">
+  <div class="au-bg" aria-hidden="true">
+    <i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i><i class="blob b4"></i>
+    <div class="au-grid"></div>
+    <svg class="au-chart" viewBox="0 0 800 400" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="agL" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#3ddc97"/><stop offset=".5" stop-color="#a6ff3d"/><stop offset="1" stop-color="#34a8f0"/></linearGradient>
+        <linearGradient id="agF" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3ddc97" stop-opacity=".3"/><stop offset="1" stop-color="#3ddc97" stop-opacity="0"/></linearGradient>
+      </defs>
+      <path class="fill" d="M0 330 C80 300 120 345 200 290 S330 235 400 255 S540 150 620 172 S740 62 800 36 L800 400 L0 400Z"/>
+      <path class="line" pathLength="1" d="M0 330 C80 300 120 345 200 290 S330 235 400 255 S540 150 620 172 S740 62 800 36"/>
+    </svg>
+    <div class="au-bars"><i style="--i:0;--h:.5"></i><i style="--i:1;--h:.9"></i><i style="--i:2;--h:.6"></i><i style="--i:3;--h:1"></i><i style="--i:4;--h:.7"></i><i style="--i:5;--h:.85"></i><i style="--i:6;--h:.55"></i><i style="--i:7;--h:.95"></i><i style="--i:8;--h:.65"></i></div>
+    <span class="coin c1">R$</span><span class="coin c2">$</span><span class="coin c3">R$</span><span class="coin c4">%</span>
+  </div>
   <div class="au-card">
     <svg class="au-logo" viewBox="0 0 64 64" aria-hidden="true"><g transform="rotate(-35 32 32)"><rect x="5" y="15" width="40" height="15" rx="7.5" fill="#1d6b63"/><rect x="19" y="34" width="40" height="15" rx="7.5" fill="#3fa79b"/></g></svg>
     <h2 id="auth-title">Bem-vindo de volta</h2>
@@ -531,18 +614,26 @@ function destroyDashboardCharts() {
 function renderDashboardCharts(c, rs) {
   if (!window.Chart || !document.getElementById("balanceChart")) return;
   destroyDashboardCharts();
-  Chart.defaults.color = "#9bb2a4";
-  Chart.defaults.font.family = "Inter, Segoe UI, system-ui, sans-serif";
-  var gridColor = "rgba(145,166,155,.12)";
+  var cs = getComputedStyle(document.documentElement);
+  var V = function(n, f){ return (cs.getPropertyValue(n) || "").trim() || f; };
+  var cMain = V("--c", "#3ddc97"), cAcc = V("--v", "#a6ff3d"), cInk = V("--ink", "#f1f5f3"), cMut = V("--mut", "#8b9893"), cCard = V("--card", "#141817"), cLine = V("--line", "#252c2a");
+  var hexA = function(h, a){ var m = /^#?([0-9a-f]{6})$/i.exec(h); if (!m) return h; var n = parseInt(m[1], 16); return "rgba(" + (n>>16&255) + "," + (n>>8&255) + "," + (n&255) + "," + a + ")"; };
+  var vgrad = function(ctx, col, a1, a2){ var ca = ctx.chart.chartArea; if (!ca) return hexA(col, a1); var g = ctx.chart.ctx.createLinearGradient(0, ca.top, 0, ca.bottom); g.addColorStop(0, hexA(col, a1)); g.addColorStop(1, hexA(col, a2)); return g; };
+  Chart.defaults.color = cMut;
+  Chart.defaults.font.family = '"Sora", system-ui, sans-serif';
+  var gridColor = "rgba(139,152,147,.14)";
   var currency = function(v){ return Number(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}); };
+  var tip = function(cb){ return {backgroundColor:cCard, borderColor:cLine, borderWidth:1, cornerRadius:14, padding:12, titleColor:cInk, bodyColor:cInk, boxPadding:6, usePointStyle:true, callbacks:cb}; };
+  var glow = {id:"glow", beforeDatasetDraw:function(ch, a){ if (ch.config.type !== "line") return; ch.ctx.save(); ch.ctx.shadowColor = ch.data.datasets[a.index].borderColor; ch.ctx.shadowBlur = 14; }, afterDatasetDraw:function(ch){ if (ch.config.type === "line") ch.ctx.restore(); }};
   var days = c.days || [];
   dashboardCharts.balance = new Chart(document.getElementById("balanceChart"), {
     type:"line",
     data:{labels:days.map(function(x){return x.d; }),datasets:[
-      {label:"Pote das contas",data:days.map(function(x){return x.pote;}),borderColor:"#27cf91",backgroundColor:"rgba(39,207,145,.12)",fill:true,tension:0,stepped:"after",borderWidth:2.5,pointRadius:2,pointHitRadius:10},
-      {label:"Dinheiro disponível",data:days.map(function(x){return x.mim;}),borderColor:"#9a9fff",backgroundColor:"rgba(154,159,255,.06)",fill:false,tension:0,stepped:"after",borderWidth:2.2,pointRadius:2,pointHitRadius:10}
+      {label:"Pote das contas",data:days.map(function(x){return x.pote;}),borderColor:cMain,backgroundColor:function(ctx){return vgrad(ctx, cMain, .42, 0);},fill:true,tension:0,stepped:"after",borderWidth:3,pointRadius:0,pointHoverRadius:6,pointHoverBackgroundColor:cCard,pointHoverBorderColor:cMain,pointHoverBorderWidth:3,pointHitRadius:12},
+      {label:"Dinheiro disponível",data:days.map(function(x){return x.mim;}),borderColor:cAcc,backgroundColor:function(ctx){return vgrad(ctx, cAcc, .2, 0);},fill:true,tension:0,stepped:"after",borderWidth:2.6,pointRadius:0,pointHoverRadius:6,pointHoverBackgroundColor:cCard,pointHoverBorderColor:cAcc,pointHoverBorderWidth:3,pointHitRadius:12}
     ]},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{legend:{position:"bottom",labels:{usePointStyle:true,boxWidth:7,padding:18}},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+": "+currency(ctx.parsed.y);}}}},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:10}},y:{grid:{color:gridColor},ticks:{callback:function(v){return "R$ "+Number(v).toLocaleString("pt-BR");}}}}}
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:1100,easing:"easeOutQuart"},interaction:{mode:"index",intersect:false},plugins:{legend:{position:"bottom",labels:{usePointStyle:true,pointStyle:"circle",boxWidth:8,padding:18}},tooltip:tip({label:function(ctx){return ctx.dataset.label+": "+currency(ctx.parsed.y);}})},scales:{x:{grid:{display:false},border:{display:false},ticks:{maxTicksLimit:10}},y:{grid:{color:gridColor,drawTicks:false},border:{display:false},ticks:{padding:8,callback:function(v){return "R$ "+Number(v).toLocaleString("pt-BR");}}}}},
+    plugins:[glow]
   });
   var expenseItems = (c.L||[]).map(function(b){
     var value = b.t === "dd" ? (b.tt||0) : (b.t === "s" ? (b.monthTotal||0) : (b.a||0));
@@ -552,15 +643,21 @@ function renderDashboardCharts(c, rs) {
   var expenseValues = expenseItems.slice(0,6).map(function(x){return x.value;});
   if (expenseItems.length>6) { expenseLabels.push("Outras"); expenseValues.push(expenseItems.slice(6).reduce(function(t,x){return t+x.value;},0)); }
   if (!expenseValues.length) { expenseLabels=["Sem contas cadastradas"]; expenseValues=[0]; }
+  var center = {id:"center", afterDraw:function(ch){ var t = ch.data.datasets[0].data.reduce(function(s,x){return s+x;},0), m = ch.getDatasetMeta(0).data[0]; if (!m || !t) return; var x = ch.ctx; x.save(); x.textAlign = "center"; x.textBaseline = "middle"; x.fillStyle = cMut; x.font = '500 11px "Sora", sans-serif'; x.fillText("Total previsto", m.x, m.y - 13); x.fillStyle = cInk; x.font = '700 17px "Sora", sans-serif'; x.fillText(currency(t), m.x, m.y + 9); x.restore(); }};
   dashboardCharts.expenses = new Chart(document.getElementById("expenseChart"), {
-    type:"doughnut",data:{labels:expenseLabels,datasets:[{data:expenseValues,backgroundColor:["#22d3a6","#8b7cff","#ffb84d","#36b8ff","#ff78ad","#a3e635","#f97373"],borderColor:"#101d19",borderWidth:4,hoverOffset:6}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:"68%",plugins:{legend:{position:"bottom",labels:{usePointStyle:true,boxWidth:7,padding:13,font:{size:10}}},tooltip:{callbacks:{label:function(ctx){return ctx.label+": "+currency(ctx.parsed);}}}}}
+    type:"doughnut",data:{labels:expenseLabels,datasets:[{data:expenseValues,backgroundColor:["#3ddc97","#34a8f0","#f2b84b","#ff7ab6","#b49aff","#a6ff3d","#ff8a5b","#5eead4"],borderColor:cCard,borderWidth:3,borderRadius:10,spacing:2,hoverOffset:12}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"72%",animation:{animateRotate:true,duration:1200,easing:"easeOutQuart"},plugins:{legend:{position:"bottom",labels:{usePointStyle:true,pointStyle:"circle",boxWidth:8,padding:13,font:{size:10}}},tooltip:tip({label:function(ctx){return ctx.label+": "+currency(ctx.parsed);}})}},
+    plugins:[center]
   });
+  var barCols = [cMain, "#b49aff", "#f2b84b"];
+  var labelsPlugin = {id:"valLabels", afterDatasetsDraw:function(ch){ var x = ch.ctx, ds = ch.data.datasets[0]; x.save(); x.textAlign = "center"; x.fillStyle = cInk; x.font = '600 11px "Sora", sans-serif'; ch.getDatasetMeta(0).data.forEach(function(b, i){ x.fillText(currency(ds.data[i]), b.x, b.y - 8); }); x.restore(); }};
   dashboardCharts.payments = new Chart(document.getElementById("paymentChart"), {
-    type:"bar",data:{labels:["Receitas previstas","Contas previstas","Já pagas"],datasets:[{data:[rs.iT||0,rs.tT||0,rs.pg||0],backgroundColor:["rgba(39,207,145,.8)","rgba(154,159,255,.8)","rgba(243,189,98,.85)"],borderRadius:8,borderSkipped:false,maxBarThickness:42}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return currency(ctx.parsed.y);}}}},scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{beginAtZero:true,grid:{color:gridColor},ticks:{callback:function(v){return "R$ "+Number(v).toLocaleString("pt-BR");}}}}}
+    type:"bar",data:{labels:["Receitas previstas","Contas previstas","Já pagas"],datasets:[{data:[rs.iT||0,rs.tT||0,rs.pg||0],backgroundColor:function(ctx){return vgrad(ctx, barCols[ctx.dataIndex] || cMain, .95, .25);},borderColor:function(ctx){return barCols[ctx.dataIndex] || cMain;},borderWidth:{top:2,left:0,right:0,bottom:0},borderRadius:16,borderSkipped:false,maxBarThickness:56}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:1000,easing:"easeOutBack"},layout:{padding:{top:24}},plugins:{legend:{display:false},tooltip:tip({label:function(ctx){return currency(ctx.parsed.y);}})},scales:{x:{grid:{display:false},border:{display:false},ticks:{font:{size:10}}},y:{beginAtZero:true,grid:{color:gridColor,drawTicks:false},border:{display:false},ticks:{padding:8,callback:function(v){return "R$ "+Number(v).toLocaleString("pt-BR");}}}}},
+    plugins:[labelsPlugin]
   });
 }
+
 
 auth.onAuthStateChanged(function(user) {
   if (user) {
