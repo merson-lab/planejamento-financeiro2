@@ -227,6 +227,20 @@ label{font-size:12px;color:var(--mut);font-weight:600}
 @keyframes shine{0%{transform:skewX(-20deg) translateX(0)}55%,100%{transform:skewX(-20deg) translateX(450%)}}
 .au-main:active{transform:scale(.98)}
 @media(prefers-reduced-motion:reduce){.au-bg *,.au-card,.au-card>*,.au-card::before,.au-logo,.au-main,.au-main::after{animation:none!important}.au-bars i{transform:scaleY(.5)}.au-chart .line{stroke-dashoffset:0}.au-chart .fill{opacity:1}}
+.ui-overlay{position:fixed;inset:0;z-index:2147483600;display:grid;place-items:center;padding:20px;background:rgba(0,0,0,.62);animation:uiFade .18s ease both}
+.ui-box{width:100%;max-width:380px;padding:22px;border-radius:26px;background:var(--card);border:1px solid var(--line);box-shadow:0 30px 70px -30px #000;animation:uiPop .22s cubic-bezier(.2,.9,.2,1) both}
+.ui-title{margin:0 0 8px;font-size:17px;font-weight:600}
+.ui-msg{margin:0;font-size:14px;line-height:1.55;color:var(--mut);white-space:pre-line}
+.ui-box>.ui-msg:first-child{color:var(--ink)}
+.ui-input{width:100%;margin-top:14px;padding:13px 14px;border:1px solid var(--line);border-radius:16px;background:var(--bg);color:var(--ink);font-size:16px;outline:0;color-scheme:dark}
+html[data-palette=light] .ui-input,html[data-palette=sage] .ui-input{color-scheme:light}
+.ui-input:focus{border-color:var(--c);box-shadow:0 0 0 4px rgba(61,220,151,.16)}
+.ui-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+.ui-btns button{min-width:92px;padding:12px 18px;border-radius:999px;border:1px solid var(--line);background:var(--card2);font-weight:600;font-size:14px}
+.ui-btns .ui-ok{border-color:transparent;background:linear-gradient(135deg,var(--v),var(--c));color:var(--onc)}
+.ui-btns .ui-ok.danger{background:var(--bad);color:#fff}
+@keyframes uiFade{from{opacity:0}}
+@keyframes uiPop{from{opacity:0;transform:translateY(14px) scale(.96)}}
 .bk-list{max-height:46vh;overflow:auto;margin-top:10px}
 .bk-item{display:flex;flex-direction:column;gap:8px;padding:12px;margin-bottom:8px;border:1px solid var(--line);border-radius:18px;background:var(--card2)}
 .bk-item b{font-size:14px}.bk-item small{display:block;color:var(--mut);font-size:11px;margin-top:1px}
@@ -622,23 +636,24 @@ function openSettings(){
   ov.classList.add("open");
 }
 function closeSettings(){document.getElementById("settings-overlay").classList.remove("open");}
-function deleteCurrentAccount(){
+async function deleteCurrentAccount(){
   var user=auth.currentUser, status=document.getElementById("settings-status");
   if(!user){status.textContent="Nenhuma conta conectada.";return;}
   var email=user.email||"esta conta";
-  var ok=window.confirm("ATENÇÃO: deseja excluir definitivamente " + email + " e os dados financeiros associados? Esta ação não pode ser desfeita.");
+  var ok=await uiConfirm("Deseja excluir definitivamente " + email + " e os dados financeiros associados? Esta ação não pode ser desfeita.", { title: "Excluir conta", ok: "Continuar", danger: true });
   if(!ok)return;
-  var typed=window.prompt('Para confirmar, digite EXCLUIR (em letras maiúsculas):');
+  var typed=await uiPrompt("Para confirmar, digite EXCLUIR (em letras maiúsculas).", "", { title: "Confirmação", ok: "Excluir", danger: true });
   if(typed!=="EXCLUIR"){status.textContent="Exclusão cancelada. Nenhum dado foi removido.";return;}
   status.textContent="Verificando a sessão e preparando a exclusão…";
   function reauthenticateIfNeeded(){
     var providers=(user.providerData||[]).map(function(p){return p.providerId;});
     if(providers.indexOf("password")>=0){
-      var pass=window.prompt("Por segurança, digite novamente a senha desta conta:");
-      if(pass===null) return Promise.reject({code:"app/cancelled"});
-      if(!pass) return Promise.reject({code:"app/missing-password"});
-      var cred=firebase.auth.EmailAuthProvider.credential(user.email,pass);
-      return user.reauthenticateWithCredential(cred);
+      return uiPrompt("Por segurança, digite novamente a senha desta conta.", "", { title: "Confirme sua senha", input: "password" }).then(function(pass){
+        if(pass===null) return Promise.reject({code:"app/cancelled"});
+        if(!pass) return Promise.reject({code:"app/missing-password"});
+        var cred=firebase.auth.EmailAuthProvider.credential(user.email,pass);
+        return user.reauthenticateWithCredential(cred);
+      });
     }
     if(providers.indexOf("google.com")>=0){
       return user.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider());
@@ -713,6 +728,52 @@ function renderDashboardCharts(c, rs) {
   });
 }
 
+
+// ==========================================
+// JANELAS DO PRÓPRIO APP (substituem alert / confirm / prompt do navegador)
+// ==========================================
+var UI = { q: [], busy: false };
+function uiDialog(o) {
+  return new Promise(function(resolve){ UI.q.push({ o: o, resolve: resolve }); if (!UI.busy) uiNext(); });
+}
+function uiNext() {
+  var it = UI.q.shift();
+  if (!it) { UI.busy = false; return; }
+  UI.busy = true;
+  var o = it.o, ov = document.createElement("div");
+  ov.className = "ui-overlay"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
+  ov.innerHTML = '<div class="ui-box">' + (o.title ? '<h3 class="ui-title"></h3>' : '') + '<p class="ui-msg"></p>' +
+    (o.input ? '<input class="ui-input" autocomplete="off">' : '') +
+    '<div class="ui-btns">' + (o.cancel === false ? '' : '<button type="button" class="ui-cancel"></button>') + '<button type="button" class="ui-ok"></button></div></div>';
+  if (o.title) ov.querySelector(".ui-title").textContent = o.title;
+  ov.querySelector(".ui-msg").textContent = o.msg || "";
+  var inp = ov.querySelector(".ui-input"), okb = ov.querySelector(".ui-ok"), cb = ov.querySelector(".ui-cancel");
+  okb.textContent = o.ok || "OK"; if (o.danger) okb.className += " danger";
+  if (cb) cb.textContent = o.cancelText || "Cancelar";
+  if (inp) {
+    inp.type = (o.input === "decimal") ? "text" : o.input;
+    if (o.input === "decimal") inp.setAttribute("inputmode", "decimal");
+    inp.value = o.value == null ? "" : String(o.value);
+    if (o.placeholder) inp.placeholder = o.placeholder;
+  }
+  function done(v) {
+    document.removeEventListener("keydown", onKey, true);
+    if (ov.parentNode) ov.parentNode.removeChild(ov);
+    it.resolve(v); uiNext();
+  }
+  function onKey(e) {
+    if (e.key === "Escape" && cb) { e.preventDefault(); done(inp ? null : false); }
+    else if (e.key === "Enter" && inp && document.activeElement === inp) { e.preventDefault(); okb.click(); }
+  }
+  okb.addEventListener("click", function(){ done(inp ? inp.value : true); });
+  if (cb) cb.addEventListener("click", function(){ done(inp ? null : false); });
+  document.addEventListener("keydown", onKey, true);
+  document.body.appendChild(ov);
+  setTimeout(function(){ try { (inp || okb).focus(); if (inp && inp.select && o.input !== "date") inp.select(); } catch(e) {} }, 30);
+}
+function uiAlert(msg, o) { return uiDialog(Object.assign({ msg: msg, cancel: false }, o || {})); }
+function uiConfirm(msg, o) { return uiDialog(Object.assign({ msg: msg }, o || {})); }
+function uiPrompt(msg, value, o) { return uiDialog(Object.assign({ msg: msg, value: value, input: "text" }, o || {})); }
 
 // ==========================================
 // BACKUPS AUTOMÁTICOS (subcoleções users/{uid}/backups e backupdata)
@@ -825,12 +886,16 @@ function bkAcao(acao, id) {
     if (acao === "cp") { return bkCopiarTexto(texto).then(function(ok){ bkStatus(ok ? "✅ Backup copiado. Cole em um bloco de notas ou mensagem para guardar." : "⚠️ Não consegui copiar neste aparelho."); }); }
     var nS = JSON.parse(texto);
     if (!nS || !nS.bills || !nS.ym) throw new Error("backup inválido");
-    if (!confirm("Restaurar o backup de " + bkQuando(ts) + " (" + bkRotulo(ts) + ")?\n\nOs dados atuais serão substituídos. Antes disso o app guarda um backup dos dados de agora.")) { bkStatus(""); return; }
-    return bkCriar("antes-restaurar").then(function(ok){
-      if (!ok && !confirm("Não consegui guardar um backup dos dados atuais. Restaurar mesmo assim?")) return;
-      S = nS; S.ym = currentYM; fix(); S.start = S.start || S.ym; CC = {}; MC = {};
-      save(); closeSettings(); draw();
-      alert("Backup restaurado.");
+    return uiConfirm("Os dados atuais serão substituídos pelo backup de " + bkQuando(ts) + " (" + bkRotulo(ts) + "). Antes disso o app guarda um backup dos dados de agora.", { title: "Restaurar backup?", ok: "Restaurar", danger: true }).then(function(sim){
+      if (!sim) { bkStatus(""); return; }
+      return bkCriar("antes-restaurar").then(function(ok){
+        return (ok ? Promise.resolve(true) : uiConfirm("Não consegui guardar um backup dos dados atuais. Restaurar mesmo assim?", { title: "Atenção", ok: "Restaurar mesmo assim", danger: true })).then(function(go){
+          if (!go) return;
+          S = nS; S.ym = currentYM; fix(); S.start = S.start || S.ym; CC = {}; MC = {};
+          save(); closeSettings(); draw();
+          return uiAlert("O backup foi restaurado.", { title: "Pronto" });
+        });
+      });
     });
   }).catch(function(e){ bkStatus("⚠️ " + (e.code || e.message)); });
 }
@@ -2091,7 +2156,7 @@ document.addEventListener("change", function(e){
   save(); draw();
 });
 
-document.addEventListener("click", function(e){
+document.addEventListener("click", async function(e){
   var t = e.target.closest("[data-a]"); if (!t) return;
   var a = t.dataset.a, i = t.dataset.i;
   var paidAntes = Object.assign({}, S.paid || {});
@@ -2108,11 +2173,12 @@ document.addEventListener("click", function(e){
     S.paidAt = S.paidAt || {};
     if (vaiMarcar && detalhe && detalhe.tipo === "saida") {
       var hojeISO = dataLocalISO();
-      var dataPg = prompt("Qual foi a data REAL em que você pagou? (AAAA-MM-DD)", hojeISO);
+      var dataPg = await uiPrompt("Em que dia você fez este pagamento?", hojeISO, { input: "date", title: "Data do pagamento", ok: "Confirmar" });
       if (dataPg === null) return;
       var dtCheck = new Date(dataPg + "T12:00:00");
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(dataPg) || isNaN(dtCheck.getTime()) || dtCheck.getFullYear()+"-"+("0"+(dtCheck.getMonth()+1)).slice(-2)+"-"+("0"+dtCheck.getDate()).slice(-2) !== dataPg) { alert("Data inválida. Use uma data real no formato AAAA-MM-DD."); return; }
-      if (dataPg.slice(0,7) !== S.ym && !confirm("Essa data é de outro mês. O cálculo deste mês vai considerar o pagamento no dia previsto, e o extrato vai registrar a data informada. Continuar?")) return;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dataPg) || isNaN(dtCheck.getTime()) || dtCheck.getFullYear()+"-"+("0"+(dtCheck.getMonth()+1)).slice(-2)+"-"+("0"+dtCheck.getDate()).slice(-2) !== dataPg) { await uiAlert("Escolha uma data válida.", { title: "Data inválida" }); return; }
+      if (dataPg.slice(0,7) !== S.ym && !(await uiConfirm("Essa data é de outro mês. O cálculo deste mês vai considerar o pagamento no dia previsto, e o extrato vai registrar a data informada.", { title: "Data de outro mês", ok: "Continuar" }))) return;
+      paidAntes = Object.assign({}, S.paid || {}); S.paidAt = S.paidAt || {};
       S.paidAt[k] = dataPg;
     }
     if (vaiMarcar) S.paid[k] = true;
@@ -2124,20 +2190,20 @@ document.addEventListener("click", function(e){
     if (S.separado[sk]) delete S.separado[sk]; else S.separado[sk] = true;
   }
   else if (a == "movin" || a == "movout") {
-    var desc = prompt("Descrição da movimentação:", a === "movin" ? "Entrada no Pote" : "Saída do Pote");
+    var desc = await uiPrompt("Descrição da movimentação:", a === "movin" ? "Entrada no Pote" : "Saída do Pote", { title: a === "movin" ? "Entrada no pote" : "Saída do pote" });
     if (desc === null) return;
-    var raw = prompt("Valor em reais (ex.: 150,00):", "0,00");
+    var raw = await uiPrompt("Valor em reais", "", { title: "Valor", input: "decimal", placeholder: "ex.: 150,00" });
     if (raw === null) return;
     var val = parseMoney(raw);
-    if (!isFinite(val) || val <= 0) { alert("Informe um valor maior que zero."); return; }
+    if (!isFinite(val) || val <= 0) { await uiAlert("Informe um valor maior que zero."); return; }
     registrarMovimento(a === "movin" ? "entrada" : "saida", desc.trim() || (a === "movin" ? "Entrada" : "Saída"), a === "movin" ? val : -val, dataLocalISO());
   }
   else if (a == "movset") {
     var atualMov = (S.movimentos || []).reduce(function(t,m){ return t + (Number(m.valor)||0); }, 0);
-    var rawSaldo = prompt("Quanto você tem REALMENTE no Pote agora?", atualMov.toFixed(2).replace(".", ","));
+    var rawSaldo = await uiPrompt("Quanto você tem REALMENTE no pote agora?", atualMov.toFixed(2).replace(".", ","), { title: "Saldo real do pote", input: "decimal" });
     if (rawSaldo === null) return;
     var novoSaldo = parseMoney(rawSaldo);
-    if (!isFinite(novoSaldo) || novoSaldo < 0) { alert("Informe um saldo válido, igual ou maior que zero."); return; }
+    if (!isFinite(novoSaldo) || novoSaldo < 0) { await uiAlert("Informe um saldo válido, igual ou maior que zero."); return; }
     var diferenca = novoSaldo - atualMov;
     if (Math.abs(diferenca) > 0.004) registrarMovimento("ajuste", "Correção do saldo real", diferenca, dataLocalISO());
   }
@@ -2145,7 +2211,7 @@ document.addEventListener("click", function(e){
     var cur = ic("dias").slice(), x = cur.indexOf(+i);
     if (x < 0) cur.push(+i);
     else if (cur.length > 1) cur.splice(x, 1);
-    else { alert("Mantenha pelo menos um dia selecionado para calcular a rotina semanal."); return; }
+    else { await uiAlert("Mantenha pelo menos um dia selecionado para calcular a rotina semanal."); return; }
     setC("dias", cur);
   }
   else if (a == "rclr") { delete (S.real || {})[S.ym]; }
@@ -2153,8 +2219,8 @@ document.addEventListener("click", function(e){
   else if (a == "bkrst") {
     var bt2 = document.getElementById("bk"), nS = null;
     try { nS = JSON.parse(bt2 ? bt2.value : ""); } catch(e3){}
-    if (!nS || !nS.bills || !nS.ym) { alert("Cole primeiro o texto do backup na caixa."); return; }
-    if (!confirm("Isso vai SUBSTITUIR todos os dados atuais (inclusive na nuvem) pelo backup colado. Continuar?")) return;
+    if (!nS || !nS.bills || !nS.ym) { await uiAlert("Cole primeiro o texto do backup na caixa."); return; }
+    if (!(await uiConfirm("Isso vai SUBSTITUIR todos os dados atuais (inclusive na nuvem) pelo backup colado.", { title: "Restaurar backup?", ok: "Restaurar", danger: true }))) return;
     try { localStorage.setItem("plano-antes-restaurar-" + (currentUserUid || "guest"), JSON.stringify(S)); } catch(e4){}
     S = nS; S.ym = currentYM; fix(); S.start = S.start || S.ym; CC = {}; MC = {};
     paidAntes = Object.assign({}, S.paid || {});
@@ -2215,11 +2281,11 @@ document.addEventListener("click", function(e){
           new Notification("Planejamento Financeiro", { body: "Lembretes ativados com sucesso!" });
           draw();
         } else {
-          alert("Permissão de notificação negada pelo navegador.");
+          uiAlert("A permissão de notificação foi negada pelo navegador.", { title: "Avisos" });
         }
       });
     } else {
-      alert("Este navegador não suporta notificações.");
+      uiAlert("Este navegador não suporta notificações.", { title: "Avisos" });
     }
   }
   else if (a == "addb") S.bills.push({ id: "b" + Date.now(), n: "Nova conta", a: 0, d: 1, t: "m", i: S.ym, f: "", v: {} });
@@ -2227,7 +2293,7 @@ document.addEventListener("click", function(e){
   else if (a == "delb" || a == "delx") {
     var key = a == "delb" ? "bills" : "ex", o = S[key].filter(function(z){ return z.id == i; })[0];
     if (o) {
-      if (!confirm("Excluir \"" + (o.n || "item") + "\"?")) return;
+      if (!(await uiConfirm("Excluir \"" + (o.n || "item") + "\"?", { title: "Excluir", ok: "Excluir", danger: true }))) return;
       if (!o.i || o.i >= S.ym) S[key] = S[key].filter(function(z){ return z.id != i; });
       else o.f = prevYM(S.ym);
     }
