@@ -1340,6 +1340,40 @@ button:active { transform:scale(.98) !important; }
  #tabs.tabs { background:rgba(13,16,15,.98) !important; border-color:#29312d !important; }
 }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { transition:none !important; animation:none !important; } }
+/* FINTECH REFERENCE OVERRIDE — black/graphite + emerald, consistent across every screen */
+:root{--bg:#090b0d!important;--card:#15191b!important;--ink:#edf5f1!important;--mut:#8d9a96!important;--line:#292f31!important;--c:#35c995!important;--v:#53b8a4!important;--ok:#35c995!important;--bad:#f06f7e!important;color-scheme:dark!important}
+html,body{background:#090b0d!important;color:#edf5f1!important}
+body{background:radial-gradient(ellipse at 50% -20%,rgba(33,139,100,.15),transparent 45%),#090b0d!important}
+.app-topbar{background:transparent!important;border-color:#242b2a!important}
+.brand-mark{background:linear-gradient(140deg,#22b982,#0d7651)!important;color:#04140d!important;border-radius:14px!important;box-shadow:0 8px 25px #1bb77a22!important}
+.welcome-copy h1,.analytics-heading,.chart-title{color:#f0f5f2!important;letter-spacing:-.04em!important}
+.welcome-copy p,.welcome-copy .eyebrow,.analytics-kicker{color:#8b9993!important}
+.cd,.card,.big,.chart-panel{background:linear-gradient(145deg,#171b1d,#111516)!important;border:1px solid #29312f!important;border-radius:20px!important;box-shadow:0 12px 30px rgba(0,0,0,.28)!important;color:#edf5f1!important}
+.cd{padding:17px!important;position:relative;overflow:hidden!important}
+.cd small{color:#8d9a96!important;font-weight:650!important}
+.cd b{color:#f0f5f2!important;font-size:clamp(20px,5vw,27px)!important;letter-spacing:-.04em!important}
+.cd:nth-child(1){border-top:2px solid #36c995!important}.cd:nth-child(2){border-top:2px solid #e7b84c!important}.cd:nth-child(3){border-top:2px solid #51b9a4!important}.cd:nth-child(4){border-top:2px solid #f07882!important}
+.big{background:linear-gradient(120deg,#123a2d,#10231c)!important;border-color:#28533f!important;color:#e7f5ed!important}
+.row{background:#141819!important;border:1px solid #292f30!important;border-radius:15px!important;color:#eaf2ee!important;box-shadow:none!important}
+.row.done{background:#111b16!important;border-color:#24382e!important}
+.card input,.card select,.fld input,.fld select,.row input,textarea,.au-field input{background:#0b0f10!important;color:#edf5f1!important;border:1px solid #303837!important;border-radius:12px!important;min-height:43px}
+input:focus,select:focus,textarea:focus{outline:2px solid #35c99530!important;border-color:#35c995!important}
+.add,.au-main{background:linear-gradient(135deg,#32c68f,#16825e)!important;color:#04140d!important;border:0!important;border-radius:13px!important;font-weight:800!important;box-shadow:0 8px 20px #24b77b22!important}
+.del{background:#271719!important;color:#f28a92!important;border:1px solid #4a2a2e!important;border-radius:12px!important}
+.nav{color:#edf5f1!important}.nav button,.mini button,.mk button,.control,.logout-button,#btn-notif{background:#1a1f20!important;color:#dce7e2!important;border:1px solid #2b3332!important;border-radius:12px!important}
+.tabs,#tabs.tabs{background:rgba(16,19,20,.96)!important;border:1px solid #252b2b!important;box-shadow:0 -8px 30px #0005!important;backdrop-filter:blur(20px)!important;border-radius:20px 20px 0 0!important}
+#tabs.tabs button{color:#899692!important;background:transparent!important;border:0!important;border-radius:13px!important}
+#tabs.tabs button.on{color:#35c995!important;background:#173126!important;box-shadow:inset 0 0 0 1px #27513c!important}
+#tabs.tabs button .tab-label{font-weight:750!important;letter-spacing:.01em!important}
+.user-avatar{background:linear-gradient(145deg,#173b2b,#1e7352)!important;border:1px solid #2c654a!important;color:#50d7a1!important}
+.settings-dialog,.settings-section,.theme-choice,.settings-action,.settings-close{background:#141819!important;color:#edf5f1!important;border-color:#2b3332!important}
+.settings-help,.settings-row p,.muted,.note{color:#899792!important}
+.calendar,.calendar-grid,.cal-grid{background:#151819!important;color:#edf5f1!important}
+button{transition:background .18s ease,border-color .18s ease,transform .18s ease!important}
+@media(hover:hover){.row:hover,.card:hover,.cd:hover{border-color:#35c99555!important;transform:translateY(-1px)}button:hover:not(:disabled){filter:brightness(1.08)}}
+@media(max-width:760px){body{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))!important}.cd,.card,.big,.chart-panel{border-radius:17px!important}.cd{padding:14px!important}.row{border-radius:13px!important}#tabs.tabs{padding:6px 5px calc(6px + env(safe-area-inset-bottom,0px))!important}#tabs.tabs button{min-height:49px!important}}
+@media(prefers-reduced-motion:reduce){button,.row,.card,.cd{transition:none!important}}
+
 </style>
 </head>
 <body>
