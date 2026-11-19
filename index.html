@@ -408,6 +408,18 @@ function fix() {
 }
 
 var CLOUD = { saving: false, again: false, timer: null };
+function lsKey() { return "plano-lastsync-" + (currentUserUid || "guest"); }
+function getLastSync() { try { return +localStorage.getItem(lsKey()) || 0; } catch(e) { return 0; } }
+function setLastSync(t) { try { localStorage.setItem(lsKey(), String(t)); } catch(e) {} }
+function mergeStates(base, other) {
+  var r = JSON.parse(JSON.stringify(base));
+  ["bills", "ex", "movimentos"].forEach(function(k){
+    var ids = {}; r[k] = Array.isArray(r[k]) ? r[k] : [];
+    r[k].forEach(function(x){ if (x && x.id !== undefined) ids[x.id] = true; });
+    (Array.isArray(other[k]) ? other[k] : []).forEach(function(x){ if (x && x.id !== undefined && !ids[x.id]) r[k].push(JSON.parse(JSON.stringify(x))); });
+  });
+  return r;
+}
 function setSync(t) { var el = document.getElementById("sync"); if (el) el.textContent = t; }
 function hora() { return new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }); }
 
@@ -431,7 +443,7 @@ function cloudPush() {
   CLOUD.saving = true;
   var j = JSON.stringify(S), ts = S.ts || Date.now();
   db.collection("users").doc(currentUserUid).set({ json: j, ts: ts }).then(function(){
-    CLOUD.saving = false;
+    CLOUD.saving = false; setLastSync(ts);
     if (CLOUD.again) { CLOUD.again = false; cloudPush(); } else setSync("☁️ Sincronizado com a nuvem às " + hora());
   }).catch(function(err){
     CLOUD.saving = false;
@@ -446,7 +458,7 @@ function listenCloud(uid) {
   var localData = null, localTs = 0, hasLocalState = false;
   try { localData = localStorage.getItem(getKey()); } catch(e){}
   if (localData) {
-    try { S = JSON.parse(localData); fix(); localTs = +S.ts || 0; hasLocalState = true; } catch(e){}
+    try { S = JSON.parse(localData); S.ym = currentYM; fix(); localTs = +S.ts || 0; hasLocalState = true; } catch(e){}
   } else {
     S = createEmptyState(); fix();
   }
@@ -455,9 +467,19 @@ function listenCloud(uid) {
     if (doc.exists) {
       var data = doc.data();
       try {
-        var rem = JSON.parse(data.json), remoteTs = +data.ts || (+rem.ts || 0);
+        var rem = JSON.parse(data.json), remoteTs = +data.ts || (+rem.ts || 0),
+            localNow = +S.ts || localTs, lastSync = getLastSync() || localTs, ymView = S.ym;
+        if (rem && hasLocalState && localNow > lastSync && remoteTs > lastSync && remoteTs !== localNow) {
+          // Os dois lados mudaram desde a última sincronização: mantém o mais recente,
+          // junta contas, rendas e lançamentos que só existiam no outro e guarda uma cópia.
+          var maisNovo = remoteTs >= localNow ? rem : S, maisVelho = maisNovo === rem ? S : rem;
+          try { localStorage.setItem("plano-conflito-" + uid, JSON.stringify({ quando: Date.now(), versao: maisVelho })); } catch(e5){}
+          S = mergeStates(maisNovo, maisVelho); S.ym = ymView; fix(); CC = {}; MC = {}; save(); draw();
+          setSync("⚠️ Dois aparelhos editaram ao mesmo tempo. Mantive a versão mais recente e juntei as contas, rendas e lançamentos novos. Confira suas marcações.");
+          return;
+        }
         if (rem && (!hasLocalState || remoteTs >= (+S.ts || localTs))) {
-          S = rem; fix(); CC = {}; MC = {}; saveLocal(); draw(); hasLocalState = true;
+          S = rem; S.ym = ymView || currentYM; fix(); CC = {}; MC = {}; saveLocal(); setLastSync(remoteTs); draw(); hasLocalState = true;
           setSync("☁️ Dados atualizados da nuvem às " + hora());
         } else if (rem && (+S.ts || localTs) > remoteTs) {
           cloudPush(); draw();
@@ -838,7 +860,7 @@ function wdOn(d) {
   var o = (S.dw || {})[S.ym + "d" + d];
   return o === "n" ? false : (o === "y" ? true : pat);
 }
-function F(n) { return (n || 0).toFixed(2).replace(".",",").replace(/,00$/,""); }
+function F(n) { var t = (Number(n) || 0).toFixed(2); if (t === "-0.00") t = "0.00"; return t.replace(".",",").replace(/,00$/,""); }
 function R(n) { return "R$ " + F(n); }
 function inp(sc, id, f, v, ty) {
   return '<input data-s="'+sc+'" data-i="'+id+'" data-f="'+f+'" type="'+ty+'" value="'+String(v).replace(/"/g,"&quot;")+'"'+(ty=="number"?' step="0.01" inputmode="decimal"':'')+'>';
@@ -886,7 +908,7 @@ function carry(ym) {
 function XS() { return S.ex.filter(function(x){ return act(x, S.ym); }).map(function(x){ return eff(x, S.ym); }); }
 function XT() { return XS(); }
 function ini0() { return ic("carry") ? carry(S.ym).p : (+S.ini[S.ym] || 0); }
-function mim0() { return ic("carry") ? carry(S.ym).m : (mao(S.ym) - ini0()); }
+function mim0() { return ic("carry") ? carry(S.ym).m : (S.ym <= S.start ? 0 : mao(S.ym) - ini0()); }
 
 function calc() {
   var p = S.ym.split("-"), Y = +p[0], M = +p[1], N = new Date(Y, M, 0).getDate(), wd = [], w = 0, wdp = [], wP = 0, d,
@@ -1144,11 +1166,18 @@ function RS(c) {
   return { pg: pg, en: en, nd: nd, tT: tT, iT: iT };
 }
 
+function gastosMes(ym) {
+  var t = 0, pre = ym + "d";
+  Object.keys(S.gp || {}).forEach(function(k){ if (k.indexOf(pre) === 0) t += Math.max(0, +S.gp[k] || 0); });
+  return t;
+}
 function mao(ym) {
   if (ym <= S.start) return 0;
   if (MC[ym] !== undefined) return MC[ym];
   var pv = prevYM(ym), o = S.ym; S.ym = pv;
-  var r = RS(calc()), v = mao(pv) + r.en - r.pg;
+  var r = RS(calc()), gpm = gastosMes(pv),
+      abertura = (pv <= S.start && !ic("carry")) ? (+S.ini[pv] || 0) : 0,
+      v = mao(pv) + r.en - r.pg - gpm + abertura;
   S.ym = o; return (MC[ym] = v);
 }
 
@@ -1643,7 +1672,12 @@ function vSaldo() {
 }
 
 function dataLocalISO() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
-function parseMoney(v) { var z = String(v == null ? "" : v).trim().replace(/\s/g, ""); if (z.indexOf(",") >= 0) z = z.replace(/\./g, "").replace(",", "."); return Number(z); }
+function parseMoney(v) {
+  var z = String(v == null ? "" : v).trim().replace(/\s/g, "").replace(/^R\$/i, "");
+  if (z.indexOf(",") >= 0) z = z.replace(/\./g, "").replace(",", ".");
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(z)) z = z.replace(/\./g, "");
+  return /^-?\d+(\.\d+)?$/.test(z) ? Number(z) : NaN;
+}
 function escHTML(v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
 function registrarMovimento(tipo, descricao, valor, data, ref) {
   S.movimentos = Array.isArray(S.movimentos) ? S.movimentos : [];
@@ -1855,6 +1889,11 @@ function draw() {
   }
 }
 
+document.addEventListener("visibilitychange", function(){
+  if (document.hidden || !currentUserUid) return;
+  var n = new Date(), ym = n.getFullYear() + "-" + ("0" + (n.getMonth() + 1)).slice(-2);
+  if (ym !== currentYM) { var seguiaNoAtual = S.ym === currentYM; currentYM = ym; if (seguiaNoAtual) S.ym = ym; CC = {}; MC = {}; draw(); }
+});
 document.addEventListener("change", function(e){
   var t = e.target, sc = t.dataset.s; if (!sc) return;
   var f = t.dataset.f, v = t.value;
@@ -1913,6 +1952,7 @@ document.addEventListener("click", function(e){
       if (dataPg === null) return;
       var dtCheck = new Date(dataPg + "T12:00:00");
       if (!/^\d{4}-\d{2}-\d{2}$/.test(dataPg) || isNaN(dtCheck.getTime()) || dtCheck.getFullYear()+"-"+("0"+(dtCheck.getMonth()+1)).slice(-2)+"-"+("0"+dtCheck.getDate()).slice(-2) !== dataPg) { alert("Data inválida. Use uma data real no formato AAAA-MM-DD."); return; }
+      if (dataPg.slice(0,7) !== S.ym && !confirm("Essa data é de outro mês. O cálculo deste mês vai considerar o pagamento no dia previsto, e o extrato vai registrar a data informada. Continuar?")) return;
       S.paidAt[k] = dataPg;
     }
     if (vaiMarcar) S.paid[k] = true;
@@ -1954,7 +1994,11 @@ document.addEventListener("click", function(e){
     var bt2 = document.getElementById("bk"), nS = null;
     try { nS = JSON.parse(bt2 ? bt2.value : ""); } catch(e3){}
     if (!nS || !nS.bills || !nS.ym) { alert("Cole primeiro o texto do backup na caixa."); return; }
-    S = nS; fix(); S.start = S.start || S.ym; save();
+    if (!confirm("Isso vai SUBSTITUIR todos os dados atuais (inclusive na nuvem) pelo backup colado. Continuar?")) return;
+    try { localStorage.setItem("plano-antes-restaurar-" + (currentUserUid || "guest"), JSON.stringify(S)); } catch(e4){}
+    S = nS; S.ym = currentYM; fix(); S.start = S.start || S.ym; CC = {}; MC = {};
+    paidAntes = Object.assign({}, S.paid || {});
+    save();
   }
   else if (a == "wkd") {
     S.dw = S.dw || {};
@@ -2023,6 +2067,7 @@ document.addEventListener("click", function(e){
   else if (a == "delb" || a == "delx") {
     var key = a == "delb" ? "bills" : "ex", o = S[key].filter(function(z){ return z.id == i; })[0];
     if (o) {
+      if (!confirm("Excluir \"" + (o.n || "item") + "\"?")) return;
       if (!o.i || o.i >= S.ym) S[key] = S[key].filter(function(z){ return z.id != i; });
       else o.f = prevYM(S.ym);
     }
