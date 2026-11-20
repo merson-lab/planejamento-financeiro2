@@ -1079,12 +1079,20 @@ function billPlan(b, ym, dias, tmd) {
 function selNames(sel) {
   return [1,2,3,4,5,6,0].filter(function(i){ return sel.indexOf(i) >= 0; }).map(function(i){ return WN[i]; }).join(", ");
 }
+function diaExtra(d) {
+  if (ic("tipoRenda") !== "diaria" || !wdOn(d)) return false;
+  var p = S.ym.split("-");
+  return ic("dias").indexOf(new Date(+p[0], +p[1]-1, d).getDay()) < 0;
+}
 function wdOn(d) {
   var p = S.ym.split("-"), pat = ic("dias").indexOf(new Date(+p[0], +p[1]-1, d).getDay()) >= 0;
   if (ic("tipoRenda") !== "diaria") return pat;
   var o = (S.dw || {})[S.ym + "d" + d];
   return o === "n" ? false : (o === "y" ? true : pat);
 }
+// Quanto separar pro pote em um dia: dias que já passaram usam o valor do plano antigo (g0),
+// o mesmo que o motor usa pra calcular o "pote no fim do dia"; hoje e os próximos usam o valor atual (g).
+function gDoDia(c, d) { return (c.t0 && d < c.t0) ? (Number(c.g0) || 0) : (Number(c.g) || 0); }
 function F(n) { var t = (Number(n) || 0).toFixed(2); if (t === "-0.00") t = "0.00"; return t.replace(".",",").replace(/,00$/,""); }
 function R(n) { return "R$ " + F(n); }
 function inp(sc, id, f, v, ty) {
@@ -1292,7 +1300,10 @@ function calc() {
         if (detail) {
           ev.push({ n: b.n, a: b.a });
           if (sh > 0) ev.push(A ? { n: "Da sobra pro pote", a: sh, in: 1, top: 1 } : { n: "Faltou no pote (não autorizado)", a: sh, den: 1 });
-          bl.push({ id: b.id, n: b.n, a: b.a, d: d, before: before, short: sh, mimAfter: mim, t: b.t });
+          // No dia do "Acertar com a realidade" o pote real que você informou vale já pras contas desse dia
+          // (antes aparecia o pote do plano antigo, que ainda não tinha sido corrigido).
+          var beforeExibido = (rd && d === rd && rl.pote !== null && rl.pote !== undefined) ? (+rl.pote || 0) : before;
+          bl.push({ id: b.id, n: b.n, a: b.a, d: d, before: beforeExibido, short: sh, mimAfter: mim, t: b.t });
         }
       });
       mim -= (S.gp || {})[S.ym + "d" + d] || 0;
@@ -1342,7 +1353,7 @@ function calc() {
     });
     weeks = Object.keys(wm).map(function(k){ return wm[k]; }).sort(function(a, b){ return a.d - b.d; });
   }
-  return { Y: Y, M: M, N: N, w: w, L: L, inc: principalRendaTotal + ex, tot: tot, g: g, g0: g0, gAdj: missN > 0 && g !== g0, missN: missN,
+  return { Y: Y, M: M, N: N, w: w, L: L, inc: principalRendaTotal + ex, tot: tot, g: g, g0: g0, t0: t0, gAdj: missN > 0 && g !== g0, missN: missN,
            min: -cobrir, md: fin0.firstTop, wk: wk, ud: ud, cobrir: cobrir, wc: wc,
            wdp: wdp, wP: wP, rd: rd, lack: Math.max(0, -fin0.minM), lackD: fin0.minMd, endMim: fin.endMim, endMimAll: fin0.endMim, endPote: fin.endPote,
            days: fin.days, days0: fin0.days, bl: fin0.bl, seps: fin.seps, weeks: weeks,
@@ -1787,7 +1798,7 @@ function vDiarias() {
   for (d = 1; d <= N; d++) {
     st = wkState(d);
     var badge = "", pat = ic("dias").indexOf(new Date(Y, M-1, d).getDay()) >= 0;
-    if (st === "y") { feitas++; if (!pat) extras++; badge = '<span class="cal-badge in">✓ Fiz</span>'; }
+    if (st === "y") { feitas++; if (!pat) extras++; badge = '<span class="cal-badge in">' + (pat ? '✓ Fiz' : '✓ Extra') + '</span>'; }
     else if (st === "n") { faltas++; badge = '<span class="cal-badge out">✗ Faltei</span>'; }
     else if (st === "p") { faltam++; badge = '<span class="cal-badge wk">Previsto</span>'; }
     h += '<div class="cal-day' + (d === tdd ? " hj" : "") + '" data-a="wkd" data-i="' + d + '"><span class="cal-num">' + d + '</span><div class="cal-dots">' + badge + '</div></div>';
@@ -1923,7 +1934,7 @@ function detalhePagamento(key) {
       c = calc(), diaMatch, b, w, x;
   if (/^d\d+$/.test(raw)) {
     diaMatch = +raw.slice(1);
-    if (ic("tipoRenda") === "diaria") return {desc:"Diária recebida — separação para o Pote (dia " + diaMatch + ")", valor:Math.max(0, Number(c.g)||0), tipo:"entrada"};
+    if (ic("tipoRenda") === "diaria") return {desc:"Diária recebida — separação para o Pote (dia " + diaMatch + ")", valor:Math.max(0, gDoDia(c, diaMatch)), tipo:"entrada"};
   }
   if (raw === "q1" || raw === "q2" || raw === "mes1") {
     var diaRenda = raw === "mes1" ? Math.min(Number(ic("diaMes"))||1,c.N) : Math.min(Number(raw === "q1" ? ic("diaQ1") : ic("diaQ2"))||1,c.N);
@@ -1937,10 +1948,10 @@ function detalhePagamento(key) {
     b = c.L[j];
     if (b.t === "dd") {
       diaMatch = raw.match(new RegExp("^" + String(b.id).replace(/[.*+?^${}()|[\]\\]/g,"\\$&") + "d(\\d+)$"));
-      if (diaMatch) return {desc:"Pagamento: " + b.n + " (dia " + diaMatch[1] + ")", valor:-Math.max(0,Number(b.a)||0), tipo:"saida"};
+      if (diaMatch) return {desc:"Pagamento: " + b.n + " (dia " + diaMatch[1] + ")", valor:-Math.max(0,Number(b.a)||0), tipo:"saida", diaPrevisto:+diaMatch[1]};
     } else if (b.t === "s") {
       (b.weekOccurrences || []).forEach(function(occ){ if (raw === b.id + "w" + occ.key) w = occ; });
-      if (w) return {desc:"Pagamento semanal: " + b.n, valor:-Math.max(0,Number(b.a)||0), tipo:"saida"};
+      if (w) return {desc:"Pagamento semanal: " + b.n, valor:-Math.max(0,Number(b.a)||0), tipo:"saida", diaPrevisto:Number(w.d)||0};
     } else if (String(b.id) === raw) {
       return {desc:"Conta paga: " + b.n, valor:-Math.max(0,Number(b.a)||0), tipo:"saida"};
     }
@@ -2001,7 +2012,7 @@ function vCalendario() {
     h += '<div class="' + cls + '" data-a="selday" data-i="' + d + '">';
     h += '<span class="cal-num">' + d + '</span>';
     h += '<div class="cal-dots">';
-    if (isWk) h += '<span class="cal-badge wk">Diária</span>';
+    if (isWk) h += '<span class="cal-badge wk">' + (diaExtra(d) ? "Diária extra" : "Diária") + '</span>';
     dayEv.forEach(function(e){
       h += '<span class="cal-badge ' + (e.in ? 'in' : 'out') + '">' + e.n + '</span>';
     });
@@ -2021,10 +2032,10 @@ function vCalendario() {
     var dn2 = S.paid[S.ym + "d" + selDay];
     h += '<button class="row' + (dn2 ? " done" : "") + '" data-a="tog" data-i="d' + selDay + '" style="margin-top:8px;">' +
          '<span class="chk">' + (dn2 ? "✓" : "") + '</span>' +
-         '<span class="grow"><b>Diária de Trabalho</b><small>Entra ' + R(ic("dia")) + '</small></span>' +
+         '<span class="grow"><b>' + (diaExtra(selDay) ? 'Diária extra' : 'Diária de Trabalho') + '</b><small>Entra ' + R(ic("dia")) + '</small></span>' +
          '</button>';
     var parteMarcada = !!((S.separado || {})[S.ym + "d" + selDay]);
-    var valorMinhaParte = Math.max(0, Number(ic("dia") || 0) - Number(c.g || 0));
+    var valorMinhaParte = Math.max(0, Number(ic("dia") || 0) - gDoDia(c, selDay));
     h += '<button class="row' + (parteMarcada ? " done" : "") + '" data-a="separar" data-i="' + selDay + '" style="margin-top:6px;align-items:flex-start;">' +
          '<span class="chk">' + (parteMarcada ? "✓" : "") + '</span>' +
          '<span class="grow"><b>Minha parte do dia</b><small>Valor planejado para você: <b>' + R(valorMinhaParte) + '</b></small><small>' +
@@ -2172,8 +2183,12 @@ document.addEventListener("click", async function(e){
     var k = S.ym + i, vaiMarcar = !S.paid[k], rawKey = i, detalhe = detalhePagamento(k);
     S.paidAt = S.paidAt || {};
     if (vaiMarcar && detalhe && detalhe.tipo === "saida") {
-      var hojeISO = dataLocalISO();
-      var dataPg = await uiPrompt("Em que dia você fez este pagamento?", hojeISO, { input: "date", title: "Data do pagamento", ok: "Confirmar" });
+      var hojeISO = dataLocalISO(), sugestao = hojeISO, sugeriuDia = false;
+      if (detalhe.diaPrevisto) {
+        var diaIso = S.ym + "-" + ("0" + detalhe.diaPrevisto).slice(-2);
+        if (diaIso < hojeISO) { sugestao = diaIso; sugeriuDia = true; }
+      }
+      var dataPg = await uiPrompt("Em que dia você fez este pagamento?" + (sugeriuDia ? "\n\nSugeri o próprio dia da conta, porque ele já passou. Se pagou em outro dia, troque a data." : ""), sugestao, { input: "date", title: "Data do pagamento", ok: "Confirmar" });
       if (dataPg === null) return;
       var dtCheck = new Date(dataPg + "T12:00:00");
       if (!/^\d{4}-\d{2}-\d{2}$/.test(dataPg) || isNaN(dtCheck.getTime()) || dtCheck.getFullYear()+"-"+("0"+(dtCheck.getMonth()+1)).slice(-2)+"-"+("0"+dtCheck.getDate()).slice(-2) !== dataPg) { await uiAlert("Escolha uma data válida.", { title: "Data inválida" }); return; }
@@ -2234,7 +2249,12 @@ document.addEventListener("click", async function(e){
       else if (ws === "y") { S.dw[wk] = "n"; delete S.paid[wk]; }
       else S.paid[wk] = true;
     } else {
-      if (ws === "off") { S.dw[wk] = "y"; S.paid[wk] = true; }
+      if (ws === "off") {
+        var nomesDia = ["domingo","segunda","terça","quarta","quinta","sexta","sábado"];
+        if (!(await uiConfirm("O dia " + i + " (" + nomesDia[new Date(+wp[0], +wp[1]-1, +i).getDay()] + ") não está entre os seus dias de trabalho. Marcar como diária extra? Ela entra na sua previsão de ganhos.", { title: "Diária extra", ok: "Marcar como extra" }))) return;
+        paidAntes = Object.assign({}, S.paid || {}); S.dw = S.dw || {};
+        S.dw[wk] = "y"; S.paid[wk] = true;
+      }
       else { delete S.dw[wk]; delete S.paid[wk]; }
     }
   }
