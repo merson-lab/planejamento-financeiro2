@@ -227,6 +227,15 @@ label{font-size:12px;color:var(--mut);font-weight:600}
 @keyframes shine{0%{transform:skewX(-20deg) translateX(0)}55%,100%{transform:skewX(-20deg) translateX(450%)}}
 .au-main:active{transform:scale(.98)}
 @media(prefers-reduced-motion:reduce){.au-bg *,.au-card,.au-card>*,.au-card::before,.au-logo,.au-main,.au-main::after{animation:none!important}.au-bars i{transform:scaleY(.5)}.au-chart .line{stroke-dashoffset:0}.au-chart .fill{opacity:1}}
+.hoje{padding:16px;margin-bottom:12px;border-radius:26px;border:1px solid color-mix(in srgb,var(--v) 40%,var(--line));background:radial-gradient(120% 100% at 0% 0%,color-mix(in srgb,var(--v) 18%,transparent),transparent 60%),var(--card)}
+.hoje-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.hoje-top b{font-size:12px;color:var(--mut);letter-spacing:.02em}
+.hoje-top span{font-size:12px;font-weight:700;text-align:right;line-height:1.3}
+.hoje-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 10px}
+.hoje-grid>div{min-width:0;padding:10px 8px;border-radius:16px;background:var(--card2);border:1px solid var(--line)}
+.hoje-grid small{display:block;font-size:10.5px;line-height:1.25;color:var(--mut)}
+.hoje-grid b{display:block;margin-top:4px;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hoje-row{font-size:13px;line-height:1.5}
 .ui-overlay{position:fixed;inset:0;z-index:2147483600;display:grid;place-items:center;padding:20px;background:rgba(0,0,0,.62);animation:uiFade .18s ease both}
 .ui-box{width:100%;max-width:380px;padding:22px;border-radius:26px;background:var(--card);border:1px solid var(--line);box-shadow:0 30px 70px -30px #000;animation:uiPop .22s cubic-bezier(.2,.9,.2,1) both}
 .ui-title{margin:0 0 8px;font-size:17px;font-weight:600}
@@ -257,7 +266,7 @@ html.lite .au-bars i{animation-duration:9s}
 body{background:var(--bg)}
 .tabs{background:var(--bg)}
 .tabs button.on{background:rgba(166,255,61,.14)}
-.cards .cd,.big,.chart-panel{background:var(--card)}
+.cards .cd,.big,.chart-panel,.hoje{background:var(--card)}
 .cards .cd b{color:var(--ink)}
 .cal-day.sel{background:rgba(128,128,128,.28)}
 .cal-badge{color:var(--ink)}
@@ -804,6 +813,27 @@ function desfazerReal(ym, antes) {
   CC = {}; MC = {}; save(); draw();
 }
 var UI_TOAST = null;
+var UNDO_KEYS = ["paid","paidAt","dw","movimentos","separado","au","bills","ex","rp","bdw"];
+var UNDO_ACOES = ["tog","separar","movin","movset","wkd","wkall","au","auall","delb","delx"];
+function snapUndo() {
+  var o = {};
+  UNDO_KEYS.forEach(function(k){ o[k] = S[k] === undefined ? undefined : JSON.parse(JSON.stringify(S[k])); });
+  return o;
+}
+function restoreUndo(o) {
+  UNDO_KEYS.forEach(function(k){ if (o[k] === undefined) delete S[k]; else S[k] = JSON.parse(JSON.stringify(o[k])); });
+  fix(); CC = {}; MC = {}; save(); draw();
+  uiToast("Pronto, a ação foi desfeita.");
+}
+function msgDesfazer(a, marcou) {
+  if (a === "tog") return marcou ? "Marcado como feito." : "Marcação removida.";
+  if (a === "separar") return "Parte do dia atualizada.";
+  if (a === "movin" || a === "movset") return "Movimentação do pote registrada.";
+  if (a === "wkd") return "Dia da diária atualizado.";
+  if (a === "wkall") return "Dias marcados como feitos.";
+  if (a === "au" || a === "auall") return "Autorização registrada.";
+  return "Item excluído.";
+}
 function uiToast(msg, acao, fn) {
   if (UI_TOAST && UI_TOAST.parentNode) UI_TOAST.parentNode.removeChild(UI_TOAST);
   var t = document.createElement("div"); t.className = "ui-toast"; t.setAttribute("role", "status");
@@ -1459,6 +1489,7 @@ function vMes() {
   var c = calc(),
       h = '<div class="nav"><button data-a="pm">‹</button><b>' + MS[c.M-1] + ' de ' + c.Y + '</b><button data-a="nm">›</button></div>';
   
+  h += "<!--HOJE-->";
   h += '<div class="note card"><b>Como o Mês se conecta:</b> aqui você acompanha o resumo e as projeções. As marcações de recebimentos e pagamentos no Calendário alteram os cálculos; Renda define valores e frequência, e Contas define despesas e vencimentos. Os valores previstos podem mudar quando você confirma ou altera eventos.</div>';
   h += '<button class="add" data-a="tab" data-i="2" style="margin:0 0 12px;background:var(--c);color:var(--bg);border-color:var(--c)">📅 Abrir calendário para marcar diárias e pagamentos →</button>';
   var td = new Date();
@@ -1572,7 +1603,7 @@ function vMes() {
   }
   var nx = (c.bl || []).filter(function(q){ return !S.paid[S.ym + q.id] && (!isCurrentMonth || q.d >= td.getDate()); })[0];
   if (nx) ban += '<div class="note" style="margin-top:-4px">Próximo vencimento: <b>' + nx.n + '</b> · dia ' + nx.d + ' · ' + R(nx.a) + ' · o pote terá ' + R(nx.before) + '</div>';
-  var spend = "";
+  var spend = "", podeHoje = null, corHoje = "var(--mut)";
   if (isCurrentMonth) {
     try {
       var hD = td.getDate(), dl = Math.max(1, c.N - hD + 1),
@@ -1612,6 +1643,7 @@ function vMes() {
               '<div class="note" style="margin:6px 0;font-size:12px">' + obs + '</div>' +
               '<label>Gastei hoje do que é pra mim (R$)</label>' + inp("g", hD, "g", gpH, "number") + '</div>';
       LASTAV.unshift("Hoje você pode gastar " + R(podeInt));
+      podeHoje = podeInt; corHoje = cor;
     } catch (e) { spend = ""; }
   }
   var rl2 = (S.real || {})[S.ym], snap = "";
@@ -1692,7 +1724,26 @@ function vMes() {
   h += ic("carry") ? '<div class="note">Veio do mês anterior: pote ' + R(cy.p) + ' · pra mim ' + R(cy.m) + '</div>'
               : '<div class="card fld"><label>Começar o mês com este valor no pote (R$)</label>' + inp("c","0","ini",S.ini[S.ym]||0,"number") + '</div>';
 
-  return h.replace("<!--BAN-->", ban + spend + permH + snap) + '<button class="add" data-a="tab" data-i="2" style="background:var(--c);color:var(--bg);border-color:var(--c)">📅 Abrir calendário para marcar diárias e pagamentos →</button>';
+  var hojeCard = "";
+  if (isCurrentMonth) {
+    try {
+      var dHj = (c.days || [])[td.getDate() - 1],
+          stTxt = fut.length ? (futMin < -0.005 ? "🚨 Vai faltar dinheiro neste mês" : "⚠️ Vai precisar tirar da sua sobra") : (pas.length ? "ℹ️ Daqui pra frente os vencimentos estão cobertos" : "✅ O pote cobre tudo"),
+          stCor = fut.length ? (futMin < -0.005 ? "var(--bad)" : "#d97706") : "var(--ok)",
+          proxTxt = nx ? "<b>" + nx.n + "</b> · " + (nx.d === td.getDate() ? "hoje" : "dia " + nx.d) + " · " + R(nx.a) : "nenhuma conta pendente neste mês",
+          nAv = (avisosHoje || []).length;
+      hojeCard = '<div class="hoje">' +
+        '<div class="hoje-top"><b>HOJE · ' + WN[td.getDay()] + ', ' + td.getDate() + ' de ' + MS[c.M-1].toLowerCase() + '</b><span style="color:' + stCor + '">' + stTxt + '</span></div>' +
+        '<div class="hoje-grid">' +
+          '<div><small>Posso gastar hoje</small><b style="color:' + corHoje + '">' + (podeHoje === null ? "—" : "R$ " + podeHoje) + '</b></div>' +
+          '<div><small>Pote das contas</small><b>' + (dHj ? R(dHj.pote) : "—") + '</b></div>' +
+          '<div><small>Pra você (acumulado)</small><b>' + (dHj ? R(dHj.mim) : "—") + '</b></div>' +
+        '</div>' +
+        '<div class="hoje-row">Próxima conta: ' + proxTxt + '</div>' +
+        (nAv ? '<div class="hoje-row" style="color:var(--mut)">🔔 ' + nAv + (nAv === 1 ? ' aviso' : ' avisos') + ' logo abaixo</div>' : '') + '</div>';
+    } catch (e5) { hojeCard = ""; }
+  }
+  return h.replace("<!--BAN-->", ban + spend + permH + snap).replace("<!--HOJE-->", hojeCard) + '<button class="add" data-a="tab" data-i="2" style="background:var(--c);color:var(--bg);border-color:var(--c)">📅 Abrir calendário para marcar diárias e pagamentos →</button>';
 }
 
 function mkGrid(c, pre, on) {
@@ -2123,7 +2174,7 @@ function vAjuda() {
        '<li><b>Marque no dia em que aconteceu.</b> Recebeu a diária? Marque. Pagou uma conta? Marque. O app só sabe o que você marca.</li>' +
        '<li><b>Informe a data real do pagamento.</b> É ela que decide em que dia o saldo cai. Em conta diária ou semanal que já passou, o app sugere o próprio dia da conta.</li>' +
        '<li><b>Se o app não bate com a realidade, use “Acertar com a realidade”</b> (aba Mês). Não invente movimentações para compensar.</li>' +
-       '<li><b>Toque com atenção nos dias de diária.</b> Um toque = trabalhei, dois = faltei, três = volta ao normal. Em dia que você não costuma trabalhar, o app pergunta se é diária extra.</li>' +
+       '<li><b>Toque com atenção nos dias de diária.</b> Um toque = trabalhei, dois = faltei, três = volta ao normal. Em dia que você não costuma trabalhar, o app pergunta se é diária extra. Marcou errado? Logo depois de pagar, marcar uma diária ou excluir algo aparece o botão <b>Desfazer</b> por 10 segundos.</li>' +
        '<li><b>Faça um backup antes de mudanças grandes</b> (⚙ Configurações → Backups automáticos).</li></ol></div>';
   h += '<div class="card" style="margin-top:10px"><h3 style="margin:0 0 8px">🧩 As palavras do app</h3><div class="note help-gl">' +
        '<div><b>Pote:</b> o dinheiro separado para pagar as contas do mês. Cada conta paga sai dele.</div>' +
@@ -2133,7 +2184,7 @@ function vAjuda() {
        '<div><b>Vencimento × pagamento:</b> vencimento é o dia limite da conta; pagamento é o dia em que você pagou. O app move a conta do vencimento para o dia do pagamento.</div>' +
        '<div><b>Diária extra / Faltei:</b> extra é uma diária num dia em que você não costuma trabalhar; faltei tira o dia do plano e o app recalcula quanto separar.</div></div></div>';
   h += card('1. Renda — de onde vem o dinheiro', 'Cadastre aqui como você recebe: diária, quinzena, salário ou renda extra. No quadro “Dias que fiz diária” você marca os dias trabalhados, as faltas e as diárias extras. O app usa esses valores para prever o que entra em cada dia.', '0');
-  h += card('2. Mês — a visão geral', 'Mostra tudo de uma vez: o que deve entrar, o que deve sair, o que já foi pago e quanto pode sobrar. Aqui está o <b>“Quanto posso gastar hoje”</b> e o <b>“Acertar com a realidade”</b>: informe quanto você tem agora no pote e pra você, e o app refaz as contas a partir de hoje. Antes de aplicar, ele mostra o que o plano previa e pede a sua confirmação. Depois, você pode desfazer na hora, ou usar “Voltar ao plano original”.', '1');
+  h += card('2. Mês — a visão geral', 'No topo, o cartão <b>“Hoje”</b> resume o essencial: quanto você pode gastar, o pote das contas, o que já se juntou pra você e a próxima conta. Abaixo dele vem o resto: o que deve entrar, o que deve sair, o que já foi pago e quanto pode sobrar. Aqui está o <b>“Quanto posso gastar hoje”</b> e o <b>“Acertar com a realidade”</b>: informe quanto você tem agora no pote e pra você, e o app refaz as contas a partir de hoje. Antes de aplicar, ele mostra o que o plano previa e pede a sua confirmação. Depois, você pode desfazer na hora, ou usar “Voltar ao plano original”.', '1');
   h += card('3. Calendário — cada dia com a sua tarefa', 'Cada dia mostra as diárias (verde) e as contas (amarelo). Toque em um dia para ver o resumo dele e marcar o que aconteceu. Ao marcar uma conta como paga, o app pergunta o dia em que você pagou. Se você marcar vários dias antigos de uma vez, confira a data de cada um, para não acumular tudo no mesmo dia.', '2');
   h += card('4. Saldo — acompanhar a evolução', 'O gráfico mostra a previsão do pote e do dinheiro pra você ao longo do mês. É uma régua de previsão, não o saldo do seu banco. Para saber o dinheiro de verdade, confira o saldo real e o extrato.', '3');
   h += card('5. Contas — para onde o dinheiro vai', 'Cadastre cada despesa com valor e vencimento. Pode ser mensal, semanal ou diária. O app distribui as contas pelo calendário e calcula quanto precisa ficar no pote. Marcar como paga desconta a conta uma única vez.', '4');
@@ -2232,6 +2283,7 @@ document.addEventListener("click", async function(e){
   var t = e.target.closest("[data-a]"); if (!t) return;
   var a = t.dataset.a, i = t.dataset.i;
   var paidAntes = Object.assign({}, S.paid || {});
+  var undoSnap = UNDO_ACOES.indexOf(a) >= 0 ? snapUndo() : null;
   if (a == "tab") { tab = +i; try{localStorage.setItem(startTabStorageKey(),String(tab));}catch(e){} }
   else if (a == "pm" || a == "nm") {
     var p = S.ym.split("-"), d = new Date(+p[0], +p[1] - 1 + (a == "nm" ? 1 : -1), 1);
@@ -2381,6 +2433,7 @@ document.addEventListener("click", async function(e){
   }
   sincronizarMovimentosPagos(paidAntes, S.paid || {});
   save(); draw();
+  if (undoSnap) uiToast(msgDesfazer(a, typeof vaiMarcar !== "undefined" ? vaiMarcar : true), "Desfazer", function(){ restoreUndo(undoSnap); });
 });
 
 try {
