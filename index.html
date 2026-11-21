@@ -241,6 +241,11 @@ html[data-palette=light] .ui-input,html[data-palette=sage] .ui-input{color-schem
 .ui-btns .ui-ok.danger{background:var(--bad);color:#fff}
 @keyframes uiFade{from{opacity:0}}
 @keyframes uiPop{from{opacity:0;transform:translateY(14px) scale(.96)}}
+.help-rules{margin:8px 0 0;padding-left:20px}.help-rules li{margin:9px 0;line-height:1.6}.help-rules b{color:var(--ink)}
+.help-gl div{margin:10px 0;line-height:1.6}.help-gl b{color:var(--ink)}
+.ui-toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:2147483300;display:flex;align-items:center;gap:14px;width:max-content;max-width:92vw;padding:12px 14px 12px 18px;border-radius:20px;background:var(--card);border:1px solid var(--line);box-shadow:0 18px 40px -16px #000;font-size:14px;animation:uiPopT .22s cubic-bezier(.2,.9,.2,1) both}
+.ui-toast button{padding:9px 14px;border-radius:999px;border:0;background:linear-gradient(135deg,var(--v),var(--c));color:var(--onc);font-weight:700;font-size:13px}
+@keyframes uiPopT{from{opacity:0;transform:translateX(-50%) translateY(12px)}}
 .bk-list{max-height:46vh;overflow:auto;margin-top:10px}
 .bk-item{display:flex;flex-direction:column;gap:8px;padding:12px;margin-bottom:8px;border:1px solid var(--line);border-radius:18px;background:var(--card2)}
 .bk-item b{font-size:14px}.bk-item small{display:block;color:var(--mut);font-size:11px;margin-top:1px}
@@ -774,6 +779,39 @@ function uiNext() {
 function uiAlert(msg, o) { return uiDialog(Object.assign({ msg: msg, cancel: false }, o || {})); }
 function uiConfirm(msg, o) { return uiDialog(Object.assign({ msg: msg }, o || {})); }
 function uiPrompt(msg, value, o) { return uiDialog(Object.assign({ msg: msg, value: value, input: "text" }, o || {})); }
+
+// plano do dia de hoje (sem o "acertar com a realidade"), pra mostrar "antes e depois"
+function planoDeHoje() {
+  var td = new Date(), p = S.ym.split("-");
+  if (td.getFullYear() !== +p[0] || td.getMonth() + 1 !== +p[1]) return null;
+  S.real = S.real || {};
+  var guardado = S.real[S.ym];
+  try {
+    if (guardado) delete S.real[S.ym];
+    CC = {}; MC = {};
+    var c = calc(), d = c.days && c.days[td.getDate() - 1];
+    return d ? { pote: d.pote, mim: d.mim, d: td.getDate() } : null;
+  } catch (e) { return null; }
+  finally { if (guardado) S.real[S.ym] = guardado; CC = {}; MC = {}; }
+}
+function novoReal(antes, f, v) {
+  var val = v === "" ? null : (parseFloat(v) || 0);
+  return { pote: f === "pote" ? val : (antes ? antes.pote : null), mim: f === "mim" ? val : (antes ? antes.mim : null) };
+}
+function desfazerReal(ym, antes) {
+  S.real = S.real || {};
+  if (antes) S.real[ym] = antes; else delete S.real[ym];
+  CC = {}; MC = {}; save(); draw();
+}
+var UI_TOAST = null;
+function uiToast(msg, acao, fn) {
+  if (UI_TOAST && UI_TOAST.parentNode) UI_TOAST.parentNode.removeChild(UI_TOAST);
+  var t = document.createElement("div"); t.className = "ui-toast"; t.setAttribute("role", "status");
+  var sp = document.createElement("span"); sp.textContent = msg; t.appendChild(sp);
+  if (acao) { var b = document.createElement("button"); b.type = "button"; b.textContent = acao; b.addEventListener("click", function(){ if (t.parentNode) t.parentNode.removeChild(t); fn(); }); t.appendChild(b); }
+  document.body.appendChild(t); UI_TOAST = t;
+  setTimeout(function(){ if (t.parentNode) t.parentNode.removeChild(t); }, 10000);
+}
 
 // ==========================================
 // BACKUPS AUTOMÁTICOS (subcoleções users/{uid}/backups e backupdata)
@@ -1562,6 +1600,7 @@ function vMes() {
       } else {
         txt = 'Contando tudo que ainda vai pagar até o fim do mês, sobram <b>' + R(livres) + '</b> livres pra você em ' + dl + (dl === 1 ? ' dia' : ' dias') + ': dá <b>' + R(budget) + '</b> por dia.';
         if (gpH > 0.005) txt += '<br>Hoje você já registrou ' + R(gpH) + ' de gasto' + (rest > 0.005 ? ': ainda restam ' + R(rest) + ' do dia.' : ': o valor do dia já foi usado.');
+        if (gpH > budget + 0.5) txt += '<br><b>Você passou ' + R(gpH - budget) + ' do valor do dia.</b> Isso diminui o que sobra para os próximos dias.';
         if (emMaos + 0.005 < rest) txt += '<br>Em mãos tem só <b>' + R(emMaos) + '</b> agora' + (pend0 > 0.005 ? ': marque ' + rec + ' como recebida que libera mais.' : '.');
       }
       var obs = (S.real || {})[S.ym]
@@ -2075,22 +2114,35 @@ function vCalendario() {
 }
 
 function vAjuda() {
-  var h = '<div class="card"><h2>📘 Como funciona o Planejamento Financeiro</h2><p>Imagine que o aplicativo é um caderno que ajuda a organizar seu dinheiro. Ele faz contas usando o que você informa. Se você mudar uma renda, uma conta ou uma data, várias partes podem mudar juntas.</p></div>';
+  var h = '<div class="card"><h2>📘 Como funciona o Planejamento Financeiro</h2><p>O app é um caderno que faz as contas por você. Ele usa o que você cadastra e o que você marca: quando você muda uma renda, uma conta ou uma data, vários números mudam juntos. Os números são uma <b>previsão</b> até você confirmar o que realmente aconteceu.</p></div>';
   function card(title, body, link) {
-    return '<div class="card" style="margin-top:10px"><h3 style="margin:0 0 8px">'+title+'</h3><div class="note" style="line-height:1.65">'+body+'</div>'+(link?'<button class="add" data-a="tab" data-i="'+link+'">Abrir esta aba →</button>':'')+'</div>';
+    return '<div class="card" style="margin-top:10px"><h3 style="margin:0 0 8px">' + title + '</h3><div class="note" style="line-height:1.65">' + body + '</div>' + (link ? '<button class="add" data-a="tab" data-i="' + link + '">Abrir esta aba →</button>' : '') + '</div>';
   }
-  h += card('1. Renda — de onde vem o dinheiro','Aqui você cadastra quanto recebe e quando recebe. A diária, salário quinzenal, mensal ou renda extra é a origem do dinheiro do planejamento. O app usa esses valores para estimar o que entrará em cada dia.','0');
-  h += card('2. Mês — visão geral','É como olhar o mês inteiro de uma vez. Mostra o que está previsto entrar, quanto deve ir para as contas, o que já foi marcado como pago e quanto pode sobrar. É uma previsão: se uma renda não entrar ou uma conta mudar, o resultado muda também.','1');
-  h += card('3. Calendário — cada dia tem sua tarefa','Mostra em que dia você trabalha, recebe e tem contas. Quando marca um recebimento ou pagamento, a marcação ajuda o planejamento a atualizar os números. Vencimento é o dia limite da conta; pagamento real é o dia em que você pagou. Se pagar antes, o registro deve usar o dia real para não descontar duas vezes.','2');
-  h += card('4. Saldo — acompanhar o dinheiro','O gráfico mostra a previsão do Pote das contas e do dinheiro disponível para você ao longo do mês. Pense nele como uma régua que mostra o saldo estimado em cada dia. A previsão não significa que o dinheiro já está na sua carteira ou banco. O extrato registra movimentos confirmados; não confunda previsão com saldo real.','3');
-  h += card('5. Contas — para onde o dinheiro vai','Cadastre as despesas, seus valores e vencimentos. O app distribui as contas pelo calendário e calcula o quanto precisa ficar reservado. Quando marcar como paga, deve considerar a saída uma única vez.','4');
-  h += card('Como as abas se conectam','Renda fornece os valores de entrada. O Mês junta entradas e despesas e calcula o resultado. O Calendário coloca cada coisa na data. O Saldo mostra como os valores evoluem. Contas informa o que precisa ser pago. Por isso, uma alteração em uma aba pode mudar outras.');
-  h += card('Previsto × real — uma diferença importante','Previsto é o que o app espera que aconteça. Real é o que realmente aconteceu e foi confirmado por você. Exemplo: o app prevê receber R$ 100 amanhã; esse valor é previsão. Só depois de receber, você confirma e ele passa a ser uma informação real.');
-  h += card('Como usar sem se confundir','1) Cadastre suas rendas. 2) Cadastre todas as contas. 3) Confira o calendário. 4) Quando receber, marque o recebimento. 5) Quando pagar, marque o pagamento e informe a data real se pagou antes. 6) Confira o Mês e o Saldo. Se algo não bater, ajuste o saldo real, não invente uma movimentação.');
-  h += '<div class="card" style="margin-top:10px;border-color:var(--warn,#d97706)"><b>⚠️ Atenção</b><div class="note">O app é uma ferramenta de organização, não acessa automaticamente sua conta bancária. Os resultados dependem dos valores e confirmações que você cadastrar.</div></div>';
+  h += '<div class="card" style="margin-top:10px;border-color:var(--v)"><h3 style="margin:0 0 4px">⭐ As 6 regras que evitam erro</h3><ol class="note help-rules">' +
+       '<li><b>Pote não é o seu dinheiro.</b> É a reserva das contas do mês. O que é seu para gastar aparece como “pra você”. Não gaste do pote.</li>' +
+       '<li><b>Marque no dia em que aconteceu.</b> Recebeu a diária? Marque. Pagou uma conta? Marque. O app só sabe o que você marca.</li>' +
+       '<li><b>Informe a data real do pagamento.</b> É ela que decide em que dia o saldo cai. Em conta diária ou semanal que já passou, o app sugere o próprio dia da conta.</li>' +
+       '<li><b>Se o app não bate com a realidade, use “Acertar com a realidade”</b> (aba Mês). Não invente movimentações para compensar.</li>' +
+       '<li><b>Toque com atenção nos dias de diária.</b> Um toque = trabalhei, dois = faltei, três = volta ao normal. Em dia que você não costuma trabalhar, o app pergunta se é diária extra.</li>' +
+       '<li><b>Faça um backup antes de mudanças grandes</b> (⚙ Configurações → Backups automáticos).</li></ol></div>';
+  h += '<div class="card" style="margin-top:10px"><h3 style="margin:0 0 8px">🧩 As palavras do app</h3><div class="note help-gl">' +
+       '<div><b>Pote:</b> o dinheiro separado para pagar as contas do mês. Cada conta paga sai dele.</div>' +
+       '<div><b>Pra você / Sobra em mãos:</b> o que não é do pote. É o seu dinheiro livre. “Quanto posso gastar hoje” é essa sobra dividida pelos dias que faltam.</div>' +
+       '<div><b>Separar:</b> em cada diária, o app diz quanto mandar para o pote. Exemplo: numa diária de R$ 80, separe R$ 20 e fique com R$ 60. É o mínimo para o pote cobrir cada vencimento, mais 20% de folga para o mês seguinte. Esse valor pode mudar durante o mês.</div>' +
+       '<div><b>Previsto × real:</b> previsto é o que o app espera; real é o que você confirmou. Só vira real depois que você marca.</div>' +
+       '<div><b>Vencimento × pagamento:</b> vencimento é o dia limite da conta; pagamento é o dia em que você pagou. O app move a conta do vencimento para o dia do pagamento.</div>' +
+       '<div><b>Diária extra / Faltei:</b> extra é uma diária num dia em que você não costuma trabalhar; faltei tira o dia do plano e o app recalcula quanto separar.</div></div></div>';
+  h += card('1. Renda — de onde vem o dinheiro', 'Cadastre aqui como você recebe: diária, quinzena, salário ou renda extra. No quadro “Dias que fiz diária” você marca os dias trabalhados, as faltas e as diárias extras. O app usa esses valores para prever o que entra em cada dia.', '0');
+  h += card('2. Mês — a visão geral', 'Mostra tudo de uma vez: o que deve entrar, o que deve sair, o que já foi pago e quanto pode sobrar. Aqui está o <b>“Quanto posso gastar hoje”</b> e o <b>“Acertar com a realidade”</b>: informe quanto você tem agora no pote e pra você, e o app refaz as contas a partir de hoje. Antes de aplicar, ele mostra o que o plano previa e pede a sua confirmação. Depois, você pode desfazer na hora, ou usar “Voltar ao plano original”.', '1');
+  h += card('3. Calendário — cada dia com a sua tarefa', 'Cada dia mostra as diárias (verde) e as contas (amarelo). Toque em um dia para ver o resumo dele e marcar o que aconteceu. Ao marcar uma conta como paga, o app pergunta o dia em que você pagou. Se você marcar vários dias antigos de uma vez, confira a data de cada um, para não acumular tudo no mesmo dia.', '2');
+  h += card('4. Saldo — acompanhar a evolução', 'O gráfico mostra a previsão do pote e do dinheiro pra você ao longo do mês. É uma régua de previsão, não o saldo do seu banco. Para saber o dinheiro de verdade, confira o saldo real e o extrato.', '3');
+  h += card('5. Contas — para onde o dinheiro vai', 'Cadastre cada despesa com valor e vencimento. Pode ser mensal, semanal ou diária. O app distribui as contas pelo calendário e calcula quanto precisa ficar no pote. Marcar como paga desconta a conta uma única vez.', '4');
+  h += card('Rotina simples do dia a dia', '1) Receba a diária e marque o dia. 2) Separe pro pote o valor que o app indica. 3) Pagou uma conta? Marque e confirme a data. 4) Se gastou do que é seu, registre em “Gastei hoje”. 5) De vez em quando, compare com o banco; se estiver diferente, use “Acertar com a realidade”.');
+  h += card('Quando os números não batem', '• Veja se há uma diária extra ou uma falta marcada sem querer (aba Renda).<br>• Veja se alguma conta paga está no dia errado (aba Calendário).<br>• Veja se falta marcar alguma diária recebida.<br>• Se ainda estiver diferente, use “Acertar com a realidade”. O app trata o valor informado como o saldo do <b>fim de hoje</b>: se ainda vai pagar uma conta hoje, informe o que vai sobrar depois dela.');
+  h += card('💾 Seus dados e os backups', 'Seus dados ficam na sua conta, na nuvem. Entre sempre com o mesmo e-mail ou método de login. A cada alteração o app guarda um backup (no máximo um a cada 10 minutos): ficam todos os das últimas 48 horas e um por dia até 45 dias. Em ⚙ Configurações → Backups automáticos você pode <b>restaurar</b>, <b>baixar</b> ou <b>copiar</b> qualquer um. Ao restaurar, o app guarda antes uma cópia dos dados atuais.');
+  h += '<div class="card" style="margin-top:10px;border-color:var(--warn,#d97706)"><b>⚠️ Atenção</b><div class="note">O app é uma ferramenta de organização. Ele não acessa a sua conta bancária, e os resultados dependem do que você cadastra e marca. Confira sempre com o seu dinheiro de verdade.</div></div>';
   return h;
 }
-
 
 function draw() {
   CC = {}; MC = {};
@@ -2130,17 +2182,25 @@ document.addEventListener("visibilitychange", function(){
   var n = new Date(), ym = n.getFullYear() + "-" + ("0" + (n.getMonth() + 1)).slice(-2);
   if (ym !== currentYM) { var seguiaNoAtual = S.ym === currentYM; currentYM = ym; if (seguiaNoAtual) S.ym = ym; CC = {}; MC = {}; draw(); }
 });
-document.addEventListener("change", function(e){
+document.addEventListener("change", async function(e){
   var t = e.target, sc = t.dataset.s; if (!sc) return;
-  var f = t.dataset.f, v = t.value;
+  var f = t.dataset.f, v = t.value, avisoReal = null;
   if (sc == "g") { S.gp = S.gp || {}; S.gp[S.ym + "d" + t.dataset.i] = Math.max(0, parseFloat(v) || 0); }
   else if (sc == "r") {
     S.real = S.real || {};
-    var rr = S.real[S.ym] || (S.real[S.ym] = { d: 1, pote: null, mim: null });
-    rr.d = new Date().getDate();
-    if (f == "pote") rr.pote = v === "" ? null : (parseFloat(v) || 0);
-    else rr.mim = v === "" ? null : (parseFloat(v) || 0);
-    if (rr.pote === null && rr.mim === null) delete S.real[S.ym];
+    var ymR = S.ym, antesR = S.real[ymR] ? JSON.parse(JSON.stringify(S.real[ymR])) : null, nv = novoReal(antesR, f, v);
+    if (nv.pote !== null || nv.mim !== null) {
+      var plano = planoDeHoje(), linhas = [];
+      if (plano) linhas.push("Pelo plano, hoje você teria: pote " + R(plano.pote) + " · pra você " + R(plano.mim) + ".");
+      linhas.push("Você informou: " + (nv.pote !== null ? "pote " + R(nv.pote) : "") + (nv.pote !== null && nv.mim !== null ? " · " : "") + (nv.mim !== null ? "pra você " + R(nv.mim) : "") + ".");
+      linhas.push("O plano será refeito a partir de hoje. Se você ainda vai pagar uma conta hoje, informe o que vai sobrar depois dela. Dá para desfazer em seguida.");
+      if (!(await uiConfirm(linhas.join("\n\n"), { title: "Acertar com a realidade?", ok: "Refazer o plano" }))) { draw(); return; }
+    }
+    S.real = S.real || {};
+    var rr = S.real[ymR] || (S.real[ymR] = { d: 1, pote: null, mim: null });
+    rr.d = new Date().getDate(); rr.pote = nv.pote; rr.mim = nv.mim;
+    if (rr.pote === null && rr.mim === null) delete S.real[ymR];
+    else avisoReal = { ym: ymR, antes: antesR, d: rr.d };
   }
   else if (sc == "c") {
     if (f == "tipoRenda") setC("tipoRenda", v);
@@ -2165,6 +2225,7 @@ document.addEventListener("change", function(e){
     }
   }
   save(); draw();
+  if (avisoReal) uiToast("Plano refeito a partir do dia " + avisoReal.d + ".", "Desfazer", function(){ desfazerReal(avisoReal.ym, avisoReal.antes); });
 });
 
 document.addEventListener("click", async function(e){
