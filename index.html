@@ -236,6 +236,22 @@ label{font-size:12px;color:var(--mut);font-weight:600}
 .hoje-grid small{display:block;font-size:10.5px;line-height:1.25;color:var(--mut)}
 .hoje-grid b{display:block;margin-top:4px;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hoje-row{font-size:13px;line-height:1.5}
+.guia{position:fixed;inset:0;z-index:2147483550;display:grid;place-items:center;padding:20px;overflow:auto;background:radial-gradient(70% 50% at 80% 10%,color-mix(in srgb,var(--c) 30%,transparent),transparent 65%),rgba(4,8,6,.94);animation:uiFade .25s ease both}
+.guia-box{position:relative;width:100%;max-width:420px;padding:28px 22px 22px;border-radius:30px;text-align:center;background:var(--card);border:1px solid color-mix(in srgb,var(--c) 30%,var(--line));box-shadow:0 30px 80px -40px var(--c);animation:uiPop .35s cubic-bezier(.2,.9,.2,1) both}
+.guia-skip{position:absolute;top:14px;right:16px;padding:6px 8px;border:0;background:none;color:var(--mut);font-size:13px;font-weight:600}
+.guia-ic{width:84px;height:84px;margin:6px auto 14px;border-radius:50%;display:grid;place-items:center;font-size:40px;background:radial-gradient(circle at 30% 25%,color-mix(in srgb,var(--v) 45%,transparent),color-mix(in srgb,var(--c) 22%,transparent) 60%,transparent 100%);animation:guiaFloat 4s ease-in-out infinite}
+@keyframes guiaFloat{50%{transform:translateY(-6px)}}
+.guia-t{margin:0 0 10px;font-size:21px}
+.guia-b{text-align:left;font-size:14.5px;line-height:1.6;color:var(--mut)}
+.guia-b b{color:var(--ink)}
+.guia-b ul{margin:10px 0 0;padding:0;list-style:none}
+.guia-b li{margin-bottom:8px;padding:10px 12px;border-radius:16px;background:var(--card2);border:1px solid var(--line)}
+.guia-dots{display:flex;justify-content:center;gap:6px;margin:16px 0 14px}
+.guia-dots i{width:7px;height:7px;border-radius:99px;background:var(--line);transition:width .25s}
+.guia-dots i.on{width:22px;background:linear-gradient(90deg,var(--v),var(--c))}
+.guia-btns{display:flex;gap:10px}
+.guia-btns button{flex:1;padding:14px;border-radius:999px;border:1px solid var(--line);background:var(--card2);font-weight:700;font-size:14px}
+.guia-btns .guia-pri{border-color:transparent;background:linear-gradient(135deg,var(--v),var(--c));color:var(--onc)}
 .ui-overlay{position:fixed;inset:0;z-index:2147483600;display:grid;place-items:center;padding:20px;background:rgba(0,0,0,.62);animation:uiFade .18s ease both}
 .ui-box{width:100%;max-width:380px;padding:22px;border-radius:26px;background:var(--card);border:1px solid var(--line);box-shadow:0 30px 70px -30px #000;animation:uiPop .22s cubic-bezier(.2,.9,.2,1) both}
 .ui-title{margin:0 0 8px;font-size:17px;font-weight:600}
@@ -260,6 +276,7 @@ html[data-palette=light] .ui-input,html[data-palette=sage] .ui-input{color-schem
 .bk-item b{font-size:14px}.bk-item small{display:block;color:var(--mut);font-size:11px;margin-top:1px}
 .bk-btns{display:flex;gap:6px}.bk-btns button{flex:1;padding:9px 0;border-radius:999px;border:1px solid var(--line);background:var(--card);font-weight:600;font-size:12px}
 .bk-btns button[data-bk=rest]{background:linear-gradient(135deg,var(--v),var(--c));color:var(--onc);border-color:transparent}
+html.lite .guia-ic{animation:none}
 html.lite .blob,html.lite .au-grid,html.lite .coin,html.lite .au-card::before,html.lite .au-main,html.lite .au-main::after,html.lite .au-logo{animation:none!important}
 html.lite .au-bars i{animation-duration:9s}
 @supports not (color:color-mix(in srgb,red,blue)){
@@ -267,6 +284,9 @@ body{background:var(--bg)}
 .tabs{background:var(--bg)}
 .tabs button.on{background:rgba(166,255,61,.14)}
 .cards .cd,.big,.chart-panel,.hoje{background:var(--card)}
+.guia{background:rgba(4,8,6,.96)}
+.guia-ic{background:rgba(61,220,151,.2)}
+.guia-box{border-color:var(--line)}
 .cards .cd b{color:var(--ink)}
 .cal-day.sel{background:rgba(128,128,128,.28)}
 .cal-badge{color:var(--ink)}
@@ -813,6 +833,69 @@ function desfazerReal(ym, antes) {
   CC = {}; MC = {}; save(); draw();
 }
 var UI_TOAST = null;
+// ==========================================
+// GUIA DE BOAS-VINDAS (primeira abertura)
+// ==========================================
+var GUIA = { passo: 0, aberto: false };
+var GUIA_PASSOS = [
+  { ic: "👋", t: "Bem-vindo ao seu Planejamento",
+    h: 'Aqui o seu dinheiro fica dividido em duas partes:<ul>' +
+       '<li>🫙 <b>Pote das contas</b><br>A reserva para pagar o que vai vencer no mês.</li>' +
+       '<li>💚 <b>Pra você</b><br>O que sobra para gastar sem medo.</li></ul>' +
+       '<p style="margin:12px 0 0">Todo dia o app diz quanto separar pro pote e quanto você pode gastar.</p>' },
+  { ic: "💼", t: "Primeiro: como você ganha",
+    h: 'Na aba <b>Renda</b>, escolha se você recebe por <b>diária</b>, <b>quinzena</b> ou <b>mês</b>, e informe o valor.' +
+       '<ul><li>Recebe por diária? Marque só os <b>dias em que você costuma trabalhar</b>. Se for de terça a sábado, marque esses.</li></ul>' },
+  { ic: "🧾", t: "Depois: as suas contas",
+    h: 'Na aba <b>Contas</b>, cadastre aluguel, internet, parcelas e outras contas, com o <b>valor</b> e o <b>dia do vencimento</b>.' +
+       '<ul><li>Gasto que se repete todo dia (como transporte) ou toda semana também pode ser cadastrado.</li></ul>' },
+  { ic: "✅", t: "No dia a dia: marque o que aconteceu",
+    h: 'No <b>Calendário</b>, marque a diária quando receber e a conta quando pagar. O app só sabe o que você marca.' +
+       '<ul><li>A aba <b>Mês</b> tem o cartão <b>“Hoje”</b>: quanto você pode gastar, o pote e a próxima conta.</li>' +
+       '<li>Se o app não bater com o seu dinheiro, use <b>“Acertar com a realidade”</b>.</li></ul>' +
+       '<p style="margin:12px 0 0">Seus dados ficam salvos na nuvem, com backup automático. Você pode rever este guia na aba <b>Ajuda</b>.</p>' }
+];
+function guiaPrecisa() {
+  if (!currentUserUid || !CLOUD.ready || GUIA.aberto) return false;
+  if (S.guiaFeito) return false;
+  try { if (localStorage.getItem("plano-guia-" + currentUserUid) === "1") return false; } catch(e) {}
+  return !(+S.dia) && !(+S.valQuinzena) && !(+S.valMes) && !(S.bills || []).length && !(S.ex || []).length;
+}
+function abrirGuia(revendo) {
+  if (GUIA.aberto) return;
+  GUIA.aberto = true; GUIA.passo = 0;
+  var ov = document.createElement("div");
+  ov.className = "guia"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-label", "Guia de boas-vindas");
+  document.body.appendChild(ov);
+  function pinta() {
+    var p = GUIA_PASSOS[GUIA.passo], ult = GUIA.passo === GUIA_PASSOS.length - 1, dots = "";
+    GUIA_PASSOS.forEach(function(_, k){ dots += '<i' + (k === GUIA.passo ? ' class="on"' : '') + '></i>'; });
+    ov.innerHTML = '<div class="guia-box"><button type="button" class="guia-skip" data-g="skip">' + (revendo ? "Fechar" : "Pular") + '</button>' +
+      '<div class="guia-ic">' + p.ic + '</div><h2 class="guia-t">' + p.t + '</h2><div class="guia-b">' + p.h + '</div>' +
+      '<div class="guia-dots">' + dots + '</div>' +
+      '<div class="guia-btns">' + (GUIA.passo > 0 ? '<button type="button" class="guia-sec" data-g="prev">Voltar</button>' : '') +
+      '<button type="button" class="guia-pri" data-g="' + (ult ? "fim" : "next") + '">' + (ult ? (revendo ? "Entendi" : "Começar pela Renda") : "Próximo") + '</button></div></div>';
+  }
+  function fechar(irRenda) {
+    if (ov.parentNode) ov.parentNode.removeChild(ov);
+    document.removeEventListener("keydown", onKey, true);
+    GUIA.aberto = false;
+    if (!S.guiaFeito) { S.guiaFeito = true; try { localStorage.setItem("plano-guia-" + currentUserUid, "1"); } catch(e) {} save(); }
+    if (irRenda) { tab = 0; try { localStorage.setItem(startTabStorageKey(), "0"); } catch(e) {} draw(); }
+  }
+  function onKey(e) { if (e.key === "Escape") { e.preventDefault(); fechar(false); } }
+  ov.addEventListener("click", function(e){
+    var b = e.target.closest && e.target.closest("[data-g]"); if (!b) return;
+    var g = b.getAttribute("data-g");
+    if (g === "next") { GUIA.passo++; pinta(); }
+    else if (g === "prev") { GUIA.passo = Math.max(0, GUIA.passo - 1); pinta(); }
+    else if (g === "fim") fechar(!revendo);
+    else fechar(false);
+  });
+  document.addEventListener("keydown", onKey, true);
+  pinta();
+}
+
 var UNDO_KEYS = ["paid","paidAt","dw","movimentos","separado","au","bills","ex","rp","bdw"];
 var UNDO_ACOES = ["tog","separar","movin","movset","wkd","wkall","au","auall","delb","delx"];
 function snapUndo() {
@@ -2169,6 +2252,7 @@ function vAjuda() {
   function card(title, body, link) {
     return '<div class="card" style="margin-top:10px"><h3 style="margin:0 0 8px">' + title + '</h3><div class="note" style="line-height:1.65">' + body + '</div>' + (link ? '<button class="add" data-a="tab" data-i="' + link + '">Abrir esta aba →</button>' : '') + '</div>';
   }
+  h += '<button class="add" data-a="guia" style="margin-top:10px">🧭 Rever o guia de boas-vindas</button>';
   h += '<div class="card" style="margin-top:10px;border-color:var(--v)"><h3 style="margin:0 0 4px">⭐ As 6 regras que evitam erro</h3><ol class="note help-rules">' +
        '<li><b>Pote não é o seu dinheiro.</b> É a reserva das contas do mês. O que é seu para gastar aparece como “pra você”. Não gaste do pote.</li>' +
        '<li><b>Marque no dia em que aconteceu.</b> Recebeu a diária? Marque. Pagou uma conta? Marque. O app só sabe o que você marca.</li>' +
@@ -2226,6 +2310,7 @@ function draw() {
       btnNotif.style.color = "var(--ok)";
     }
   }
+  try { if (guiaPrecisa()) setTimeout(function(){ if (guiaPrecisa()) abrirGuia(false); }, 500); } catch(eG) {}
 }
 
 document.addEventListener("visibilitychange", function(){
@@ -2291,6 +2376,7 @@ document.addEventListener("click", async function(e){
     selDay = 1;
   }
   else if (a == "selday") selDay = +i;
+  else if (a == "guia") { abrirGuia(true); return; }
   else if (a == "tvenc") VOPEN = !VOPEN;
   else if (a == "tog") {
     var k = S.ym + i, vaiMarcar = !S.paid[k], rawKey = i, detalhe = detalhePagamento(k);
