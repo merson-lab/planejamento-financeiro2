@@ -271,6 +271,8 @@ html[data-palette=light] .ui-input,html[data-palette=sage] .ui-input{color-schem
 .ui-toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:2147483300;display:flex;align-items:center;gap:14px;width:max-content;max-width:92vw;padding:12px 14px 12px 18px;border-radius:20px;background:var(--card);border:1px solid var(--line);box-shadow:0 18px 40px -16px #000;font-size:14px;animation:uiPopT .22s cubic-bezier(.2,.9,.2,1) both}
 .ui-toast button{padding:9px 14px;border-radius:999px;border:0;background:linear-gradient(135deg,var(--v),var(--c));color:var(--onc);font-weight:700;font-size:13px}
 @keyframes uiPopT{from{opacity:0;transform:translateX(-50%) translateY(12px)}}
+#lem-opts{margin-top:10px}
+#lem-opts .settings-row{margin-bottom:10px}
 .bk-list{max-height:46vh;overflow:auto;margin-top:10px}
 .bk-item{display:flex;flex-direction:column;gap:8px;padding:12px;margin-bottom:8px;border:1px solid var(--line);border-radius:18px;background:var(--card2)}
 .bk-item b{font-size:14px}.bk-item small{display:block;color:var(--mut);font-size:11px;margin-top:1px}
@@ -402,6 +404,17 @@ body{background:var(--bg)}
     <section class="settings-section">
       <h3>🔐 Privacidade e dados</h3><p class="settings-help">Os dados financeiros da conta são sincronizados com o Firebase e também podem ficar armazenados localmente neste aparelho. Não compartilhe seu acesso.</p>
       <div class="settings-row"><p>Conta conectada</p><b id="settings-account" style="font-size:12px;overflow-wrap:anywhere;text-align:right"></b></div>
+    </section>
+    <section class="settings-section">
+      <h3>⏰ Lembretes de contas no celular</h3><p class="settings-help" id="lem-help"></p>
+      <div class="settings-row"><p>Lembretes</p><button class="settings-action" id="lem-toggle" type="button">Ativar</button></div>
+      <div id="lem-opts" style="display:none">
+        <div class="settings-row"><p>Horário do aviso</p><select class="settings-select" id="lem-hora"><option value="07:00">7h</option><option value="08:00">8h</option><option value="09:00">9h</option><option value="12:00">12h</option><option value="18:00">18h</option></select></div>
+        <div class="settings-row"><p>Avisar também na véspera, às 20h</p><button class="settings-action" id="lem-vesp" type="button">Ligado</button></div>
+        <div class="settings-row"><p>Incluir gastos diários (como transporte)</p><button class="settings-action" id="lem-diar" type="button">Desligado</button></div>
+        <button class="settings-action" id="lem-test" type="button" style="width:100%">Enviar um lembrete de teste</button>
+      </div>
+      <div class="settings-status" id="lem-status" aria-live="polite"></div>
     </section>
     <section class="settings-section">
       <h3>🛟 Backups automáticos</h3><p class="settings-help">A cada alteração o app guarda uma cópia na nuvem (no máximo uma a cada 10 minutos). Ficam todas as das últimas 48 horas e uma por dia até 45 dias. Você pode restaurar, baixar ou copiar qualquer uma.</p>
@@ -667,9 +680,11 @@ function openSettings(){
   document.getElementById("settings-notif").textContent=perm==="granted"?"Permissão concedida":perm==="unsupported"?"Indisponível":"Ativar avisos";
   document.getElementById("settings-notif").disabled=perm==="granted"||perm==="unsupported";
   document.getElementById("settings-status").textContent="";
+  try{lemPintar();}catch(eL){}
+  if (!ov.classList.contains("open")) backAbrir("settings", function(){ closeSettings(true); });
   ov.classList.add("open");
 }
-function closeSettings(){document.getElementById("settings-overlay").classList.remove("open");}
+function closeSettings(pelaVolta){var ov=document.getElementById("settings-overlay"),estava=ov.classList.contains("open");ov.classList.remove("open");if(estava&&pelaVolta!==true)backFechouPelaUI("settings");}
 async function deleteCurrentAccount(){
   var user=auth.currentUser, status=document.getElementById("settings-status");
   if(!user){status.textContent="Nenhuma conta conectada.";return;}
@@ -766,6 +781,66 @@ function renderDashboardCharts(c, rs) {
 // ==========================================
 // JANELAS DO PRÓPRIO APP (substituem alert / confirm / prompt do navegador)
 // ==========================================
+// ==========================================
+// BOTÃO VOLTAR DO ANDROID: fecha janelas e volta de aba antes de sair do app
+// ==========================================
+var BACK = { stack: [], ignore: 0, fila: [], lastTab: undefined, navPop: false, seq: 0, nativo: false };
+// No APK (plugin @capacitor/app) o botão voltar chega direto aqui; no navegador usamos o histórico.
+function appPlugin() {
+  try {
+    var C = window.Capacitor; if (!C) return null;
+    if (C.Plugins && C.Plugins.App) return C.Plugins.App;
+    if (C.isPluginAvailable && C.registerPlugin && C.isPluginAvailable("App")) return C.registerPlugin("App");
+  } catch(e) {}
+  return null;
+}
+function backAndroid() {
+  var topo = BACK.stack.pop();
+  if (topo) { try { topo.fechar(); } catch(e) {} return; }
+  var AP = appPlugin(); if (AP && AP.exitApp) AP.exitApp();
+}
+function backIniciar() {
+  if (BACK.nativo) return true;
+  var AP = appPlugin();
+  if (AP && AP.addListener) { try { AP.addListener("backButton", backAndroid); BACK.nativo = true; } catch(e) {} }
+  return BACK.nativo;
+}
+function backEmpurrar(item) { try { history.pushState({ plano: item.id }, ""); } catch(e) {} }
+function backAbrir(id, fechar) {
+  var item = { id: id, fechar: fechar };
+  BACK.stack.push(item);
+  if (backIniciar()) return;
+  if (BACK.ignore > 0) BACK.fila.push(item); else backEmpurrar(item);
+}
+// Chamado quando algo foi fechado pelo próprio app (botão, X, Esc): tira a entrada do histórico.
+function backFechouPelaUI(id) {
+  var i = -1;
+  for (var k = BACK.stack.length - 1; k >= 0; k--) if (BACK.stack[k].id === id) { i = k; break; }
+  if (i < 0) return;
+  var item = BACK.stack.splice(i, 1)[0], fi = BACK.fila.indexOf(item);
+  if (BACK.nativo) return;
+  if (fi >= 0) { BACK.fila.splice(fi, 1); return; }
+  BACK.ignore++;
+  try { history.back(); } catch(e) { BACK.ignore--; }
+}
+window.addEventListener("popstate", function(){
+  if (BACK.ignore > 0) {
+    BACK.ignore--;
+    if (BACK.ignore === 0) BACK.fila.splice(0).forEach(function(it){ if (BACK.stack.indexOf(it) >= 0) backEmpurrar(it); });
+    return;
+  }
+  var topo = BACK.stack.pop();
+  if (topo) { try { topo.fechar(); } catch(e) {} }
+});
+backIniciar();
+
+function backRegistrarAba() {
+  if (BACK.lastTab !== undefined && tab !== BACK.lastTab && !BACK.navPop) {
+    var abaAnterior = BACK.lastTab;
+    backAbrir("tab", function(){ BACK.navPop = true; tab = abaAnterior; try { localStorage.setItem(startTabStorageKey(), String(abaAnterior)); } catch(e) {} draw(); BACK.navPop = false; });
+  }
+  BACK.lastTab = tab;
+}
 var UI = { q: [], busy: false };
 function uiDialog(o) {
   return new Promise(function(resolve){ UI.q.push({ o: o, resolve: resolve }); if (!UI.busy) uiNext(); });
@@ -790,11 +865,14 @@ function uiNext() {
     inp.value = o.value == null ? "" : String(o.value);
     if (o.placeholder) inp.placeholder = o.placeholder;
   }
-  function done(v) {
+  var idUi = "ui" + (++BACK.seq);
+  function done(v, pelaVolta) {
     document.removeEventListener("keydown", onKey, true);
     if (ov.parentNode) ov.parentNode.removeChild(ov);
+    if (pelaVolta !== true) backFechouPelaUI(idUi);
     it.resolve(v); uiNext();
   }
+  backAbrir(idUi, function(){ done(inp ? null : false, true); });
   function onKey(e) {
     if (e.key === "Escape" && cb) { e.preventDefault(); done(inp ? null : false); }
     else if (e.key === "Enter" && inp && document.activeElement === inp) { e.preventDefault(); okb.click(); }
@@ -876,7 +954,8 @@ function abrirGuia(revendo) {
       '<div class="guia-btns">' + (GUIA.passo > 0 ? '<button type="button" class="guia-sec" data-g="prev">Voltar</button>' : '') +
       '<button type="button" class="guia-pri" data-g="' + (ult ? "fim" : "next") + '">' + (ult ? (revendo ? "Entendi" : "Começar pela Renda") : "Próximo") + '</button></div></div>';
   }
-  function fechar(irRenda) {
+  function fechar(irRenda, pelaVolta) {
+    if (pelaVolta !== true) backFechouPelaUI("guia");
     if (ov.parentNode) ov.parentNode.removeChild(ov);
     document.removeEventListener("keydown", onKey, true);
     GUIA.aberto = false;
@@ -893,6 +972,7 @@ function abrirGuia(revendo) {
     else fechar(false);
   });
   document.addEventListener("keydown", onKey, true);
+  backAbrir("guia", function(){ fechar(false, true); });
   pinta();
 }
 
@@ -1055,6 +1135,133 @@ function bkAcao(acao, id) {
   if (l) l.addEventListener("click", bkListar);
   if (n) n.addEventListener("click", function(){ bkStatus("⏳ Criando backup…"); bkCriar("manual").then(function(ok){ if (ok) { bkStatus("✅ Backup criado às " + hora()); bkListar(); } }); });
   if (lst) lst.addEventListener("click", function(e){ var b = e.target.closest && e.target.closest("button[data-bk]"); if (b) bkAcao(b.getAttribute("data-bk"), b.getAttribute("data-id")); });
+})();
+
+// ==========================================
+// LEMBRETES DE CONTAS NO CELULAR (APK com o plugin @capacitor/local-notifications)
+// ==========================================
+var LEM = { timer: null };
+function lemPlugin() {
+  try {
+    var C = window.Capacitor; if (!C) return null;
+    if (C.Plugins && C.Plugins.LocalNotifications) return C.Plugins.LocalNotifications;
+    if (C.isPluginAvailable && C.registerPlugin && C.isPluginAvailable("LocalNotifications")) return C.registerPlugin("LocalNotifications");
+  } catch(e) {}
+  return null;
+}
+function lemKey() { return "plano-lembretes-" + (currentUserUid || "guest"); }
+function lemPrefs() {
+  var d = { on: false, hora: "08:00", vespera: true, diarios: false };
+  try { var o = JSON.parse(localStorage.getItem(lemKey()) || "null"); if (o) Object.keys(d).forEach(function(k){ if (o[k] !== undefined) d[k] = o[k]; }); } catch(e) {}
+  return d;
+}
+function lemSalvar(p) { try { localStorage.setItem(lemKey(), JSON.stringify(p)); } catch(e) {} }
+function lemStatus(t) { var el = document.getElementById("lem-status"); if (el) el.textContent = t || ""; }
+// Monta a lista de lembretes dos próximos 14 dias (só contas ainda não pagas).
+function lemCalcular(p, agora) {
+  var out = [], cache = {};
+  function contasDoMes(ym) {
+    if (!cache[ym]) { var o = S.ym; S.ym = ym; try { cache[ym] = calc(); } finally { S.ym = o; } }
+    return cache[ym];
+  }
+  function itens(dt, diarios) {
+    var ym = dt.getFullYear() + "-" + ("0" + (dt.getMonth() + 1)).slice(-2), d = dt.getDate(), c = contasDoMes(ym), r = [];
+    (c.L || []).forEach(function(b){
+      if (b.t === "dd") { if (diarios && b.on && b.on[d] && !S.paid[ym + b.id + "d" + d]) r.push({ n: b.n, a: b.a }); }
+      else if (b.t === "s") { (b.weekOccurrences || []).forEach(function(w){ if (w.d === d && !S.paid[ym + b.id + "w" + w.key]) r.push({ n: b.n, a: b.a }); }); }
+      else if (Math.min(b.d || 1, c.N) === d && !S.paid[ym + b.id]) r.push({ n: b.n, a: b.a });
+    });
+    return r;
+  }
+  function resumo(r) {
+    r = r.slice().sort(function(x, y){ return y.a - x.a; });
+    var txt = r.slice(0, 4).map(function(x){ return (x.n || "Conta") + " " + R(x.a); }).join(" · ");
+    if (r.length > 4) txt += " +" + (r.length - 4);
+    if (r.length > 1) txt += " — total " + R(r.reduce(function(t, x){ return t + (+x.a || 0); }, 0));
+    return txt;
+  }
+  var hh = String(p.hora || "08:00").split(":"), H = +hh[0] || 8, M = +hh[1] || 0;
+  for (var off = 0; off < 14; off++) {
+    var dt = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() + off), it = itens(dt, p.diarios);
+    if (it.length) {
+      var at = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), H, M, 0);
+      if (at > agora) out.push({ id: 9100 + off, at: at, title: "💸 Contas de hoje", body: resumo(it) });
+    }
+    if (p.vespera) {
+      var iv = itens(dt, false);
+      if (iv.length) {
+        var av = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() - 1, 20, 0, 0);
+        if (av > agora) out.push({ id: 9150 + off, at: av, title: "⏰ Amanhã vence", body: resumo(iv) });
+      }
+    }
+  }
+  return out;
+}
+async function lemReagendar() {
+  var LN = lemPlugin(); if (!LN) return 0;
+  var p = lemPrefs();
+  if (p.on && !CLOUD.ready) { lemStatus("⏳ Aguardando a nuvem para agendar os lembretes."); return 0; }
+  try {
+    var ids = []; for (var i = 9100; i < 9200; i++) ids.push({ id: i });
+    await LN.cancel({ notifications: ids });
+    if (!p.on) return 0;
+    var perm = await LN.checkPermissions();
+    if (perm.display !== "granted") { lemStatus("⚠️ As notificações do app estão bloqueadas nas configurações do Android."); return 0; }
+    var lista = lemCalcular(p, new Date());
+    if (lista.length) await LN.schedule({ notifications: lista.map(function(x){ return { id: x.id, title: x.title, body: x.body, schedule: { at: x.at, allowWhileIdle: true }, channelId: "contas" }; }) });
+    lemStatus(lista.length ? "✅ " + lista.length + (lista.length === 1 ? " lembrete agendado" : " lembretes agendados") + " para os próximos 14 dias." : "Nenhuma conta a vencer nos próximos 14 dias.");
+    return lista.length;
+  } catch(e) { lemStatus("⚠️ Não consegui agendar os lembretes: " + ((e && e.message) || e)); return 0; }
+}
+function lemAgendar() {
+  if (!lemPlugin() || !lemPrefs().on) return;
+  clearTimeout(LEM.timer); LEM.timer = setTimeout(lemReagendar, 2500);
+}
+function lemPintar() {
+  var el = function(id){ return document.getElementById(id); }, p = lemPrefs(), LN = lemPlugin();
+  if (!el("lem-toggle")) return;
+  el("lem-help").textContent = LN ? "O celular avisa das contas que vencem, mesmo com o app fechado. Só entram contas que ainda não foram pagas." : (window.Capacitor ? "Este APK ainda não tem o plugin de notificações. Gere o APK de novo com o plugin instalado e esta opção libera." : "Disponível só no app instalado (APK). No navegador, os avisos aparecem quando você abre o app.");
+  el("lem-toggle").textContent = p.on ? "Desativar" : "Ativar";
+  el("lem-toggle").disabled = !LN;
+  el("lem-opts").style.display = (LN && p.on) ? "block" : "none";
+  el("lem-hora").value = p.hora;
+  el("lem-vesp").textContent = p.vespera ? "Ligado" : "Desligado";
+  el("lem-diar").textContent = p.diarios ? "Ligado" : "Desligado";
+}
+(function(){
+  var el = function(id){ return document.getElementById(id); };
+  if (!el("lem-toggle")) return;
+  el("lem-toggle").addEventListener("click", async function(){
+    var LN = lemPlugin(); if (!LN) return;
+    var p = lemPrefs();
+    if (!p.on) {
+      try {
+        var perm = await LN.checkPermissions();
+        if (perm.display !== "granted") perm = await LN.requestPermissions();
+        if (perm.display !== "granted") { lemStatus("⚠️ Sem permissão. Ative as notificações deste app nas configurações do Android."); return; }
+        try { await LN.createChannel({ id: "contas", name: "Contas a vencer", description: "Lembretes de contas", importance: 4, visibility: 1 }); } catch(e2) {}
+      } catch(e) { lemStatus("⚠️ Não consegui pedir a permissão: " + ((e && e.message) || e)); return; }
+      p.on = true;
+    } else p.on = false;
+    lemSalvar(p); lemPintar();
+    var n = await lemReagendar();
+    if (!p.on) lemStatus("Lembretes desativados.");
+  });
+  el("lem-hora").addEventListener("change", function(){ var p = lemPrefs(); p.hora = el("lem-hora").value; lemSalvar(p); lemReagendar(); });
+  el("lem-vesp").addEventListener("click", function(){ var p = lemPrefs(); p.vespera = !p.vespera; lemSalvar(p); lemPintar(); lemReagendar(); });
+  el("lem-diar").addEventListener("click", function(){ var p = lemPrefs(); p.diarios = !p.diarios; lemSalvar(p); lemPintar(); lemReagendar(); });
+  el("lem-test").addEventListener("click", async function(){
+    var LN = lemPlugin(); if (!LN) { lemStatus("Disponível só no app instalado (APK)."); return; }
+    try {
+      var perm = await LN.checkPermissions();
+      if (perm.display !== "granted") perm = await LN.requestPermissions();
+      if (perm.display !== "granted") { lemStatus("⚠️ Sem permissão de notificação."); return; }
+      try { await LN.createChannel({ id: "contas", name: "Contas a vencer", description: "Lembretes de contas", importance: 4, visibility: 1 }); } catch(e2) {}
+      await LN.schedule({ notifications: [{ id: 9199, title: "✅ Teste de lembrete", body: "Se você viu isto, os lembretes de contas estão funcionando.", schedule: { at: new Date(Date.now() + 5000), allowWhileIdle: true }, channelId: "contas" }] });
+      lemStatus("Enviado. Pode sair do app: o aviso chega em uns 5 segundos.");
+    } catch(e) { lemStatus("⚠️ Não consegui enviar o teste: " + ((e && e.message) || e)); }
+  });
+  document.addEventListener("visibilitychange", function(){ if (!document.hidden) lemAgendar(); });
 })();
 
 auth.onAuthStateChanged(function(user) {
@@ -2310,6 +2517,8 @@ function draw() {
       btnNotif.style.color = "var(--ok)";
     }
   }
+  try { backRegistrarAba(); } catch(eB) {}
+  try { lemAgendar(); } catch(eL) {}
   try { if (guiaPrecisa()) setTimeout(function(){ if (guiaPrecisa()) abrirGuia(false); }, 500); } catch(eG) {}
 }
 
