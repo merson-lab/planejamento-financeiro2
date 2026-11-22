@@ -1809,6 +1809,7 @@ var SEC_KEY = "plano-mes-abertas";
 var MESOP = (function(){ try { return JSON.parse(localStorage.getItem(SEC_KEY) || "{}") || {}; } catch(e) { return {}; } })();
 function secAberta(id, padrao) { return MESOP[id] === undefined ? !!padrao : !!MESOP[id]; }
 var LASTCH = null;
+var ACERTO_DICA = false; // true só no desenho logo após marcar "Minha parte do dia" (mostra a dica no Acertar com a realidade)
 function secao(id, ic, titulo, resumo, html, padrao) {
   var ab = secAberta(id, padrao);
   return '<div class="sec" data-sec="' + id + '" data-open="' + (ab ? "1" : "0") + '">' +
@@ -2037,9 +2038,18 @@ function vMes() {
       podeHoje = podeInt; corHoje = cor;
     } catch (e) { spend = ""; }
   }
-  var rl2 = (S.real || {})[S.ym], snap = "";
+  var rl2 = (S.real || {})[S.ym], snap = "", dicaAcerto = "";
+  if (ACERTO_DICA) {
+    ACERTO_DICA = false;
+    try {
+      var plD = isCurrentMonth ? planoDeHoje() : null;
+      dicaAcerto = '<div class="note" style="margin:0 0 8px"><b>Você marcou sua parte do dia.</b> ' +
+        (plD ? 'Pelo plano, hoje você teria: pote <b>' + R(plD.pote) + '</b> · pra você <b>' + R(plD.mim) + '</b>. ' : '') +
+        'Se o seu dinheiro estiver diferente disso, informe abaixo. Se estiver igual, não precisa mexer.</div>';
+    } catch (eD) { dicaAcerto = ""; }
+  }
   if (isCurrentMonth) {
-    snap = secao("acertar", "🔄", "Acertar com a realidade", rl2 ? "plano refeito a partir do dia " + rl2.d : "use se o dinheiro não bate", '<div class="card fld"><div class="note" style="margin:0 0 6px">Se o dinheiro que você tem agora é diferente do plano, diga quanto tem e eu refaço as contas daqui pra frente.</div>' +
+    snap = secao("acertar", "🔄", "Acertar com a realidade", rl2 ? "plano refeito a partir do dia " + rl2.d : "use se o dinheiro não bate", '<div class="card fld">' + dicaAcerto + '<div class="note" style="margin:0 0 6px">Se o dinheiro que você tem agora é diferente do plano, diga quanto tem e eu refaço as contas daqui pra frente.</div>' +
            '<div class="g2"><div><label>Tenho no pote agora (R$)</label>' + inp("r","0","pote", rl2 && rl2.pote != null ? rl2.pote : "", "number") + '</div>' +
            '<div><label>Tenho pra mim agora (R$)</label>' + inp("r","0","mim", rl2 && rl2.mim != null ? rl2.mim : "", "number") + '</div></div>' +
            (rl2 ? '<div class="note">Plano refeito a partir do dia ' + rl2.d + ' com o que você informou.</div><button class="del" data-a="rclr" style="margin-top:0">Voltar ao plano original</button>' : '') + '</div>', !!rl2);
@@ -2517,9 +2527,10 @@ function vCalendario() {
          '</button>';
     var parteMarcada = !!((S.separado || {})[S.ym + "d" + selDay]);
     var valorMinhaParte = Math.max(0, Number(ic("dia") || 0) - gDoDia(c, selDay));
+    var valorPoteDia = Math.max(0, gDoDia(c, selDay));
     h += '<button class="row' + (parteMarcada ? " done" : "") + '" data-a="separar" data-i="' + selDay + '" style="margin-top:6px;align-items:flex-start;">' +
          '<span class="chk">' + (parteMarcada ? "✓" : "") + '</span>' +
-         '<span class="grow"><b>Minha parte do dia</b><small>Valor planejado para você: <b>' + R(valorMinhaParte) + '</b></small><small>' +
+         '<span class="grow"><b>Minha parte do dia</b><small>Valor planejado para você: <b>' + R(valorMinhaParte) + '</b></small><small>Vai pro pote das contas: <b>' + R(valorPoteDia) + '</b></small><small>' +
          (parteMarcada ? '✓ Você confirmou que separou/recebeu ' + R(valorMinhaParte) + '.' : 'Marque quando separar ou receber esse valor.') +
          '</small></span><span class="amt in">' + R(valorMinhaParte) + '</span></button>';
   }
@@ -2677,7 +2688,7 @@ document.addEventListener("change", async function(e){
 document.addEventListener("click", async function(e){
   var t = e.target.closest("[data-a]"); if (!t) return;
   var a = t.dataset.a, i = t.dataset.i;
-  var paidAntes = Object.assign({}, S.paid || {});
+  var paidAntes = Object.assign({}, S.paid || {}), irAcertoReal = false;
   var undoSnap = UNDO_ACOES.indexOf(a) >= 0 ? snapUndo() : null;
   if (a == "tab") { tab = +i; try{localStorage.setItem(startTabStorageKey(),String(tab));}catch(e){} }
   else if (a == "pm" || a == "nm") {
@@ -2713,7 +2724,7 @@ document.addEventListener("click", async function(e){
   else if (a == "separar") {
     S.separado = S.separado || {};
     var sk = S.ym + "d" + i;
-    if (S.separado[sk]) delete S.separado[sk]; else S.separado[sk] = true;
+    if (S.separado[sk]) delete S.separado[sk]; else { S.separado[sk] = true; irAcertoReal = (S.ym === currentYM && +i === new Date().getDate()); }
   }
   else if (a == "movin" || a == "movout") {
     var desc = await uiPrompt("Descrição da movimentação:", a === "movin" ? "Entrada no Pote" : "Saída do Pote", { title: a === "movin" ? "Entrada no pote" : "Saída do pote" });
@@ -2830,7 +2841,15 @@ document.addEventListener("click", async function(e){
     }
   }
   sincronizarMovimentosPagos(paidAntes, S.paid || {});
+  if (irAcertoReal) {
+    tab = 1; try { localStorage.setItem(startTabStorageKey(), "1"); } catch(eT) {}
+    MESOP.acertar = true; secPersistir(); ACERTO_DICA = true;
+  }
   save(); draw();
+  if (irAcertoReal) setTimeout(function(){
+    var el = document.querySelector('.sec[data-sec="acertar"]');
+    if (el) { el.style.scrollMarginTop = "12px"; try { el.scrollIntoView({ behavior: "smooth", block: "start" }); } catch(eS) { el.scrollIntoView(); } }
+  }, 80);
   if (undoSnap) uiToast(msgDesfazer(a, typeof vaiMarcar !== "undefined" ? vaiMarcar : true), "Desfazer", function(){ restoreUndo(undoSnap); });
 });
 
