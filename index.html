@@ -2754,6 +2754,8 @@ document.addEventListener("click", async function(e){
     }
     if (vaiMarcar) S.paid[k] = true;
     else { delete S.paid[k]; delete S.paidAt[k]; }
+    // Ao confirmar uma diária de trabalho de hoje, abrir automaticamente o Acerto de Realidade.
+    if (rawKey && /^d\d+$/.test(rawKey) && vaiMarcar && ehHoje(+rawKey.slice(1))) pedirAcertoReal = true;
   }
   else if (a == "separar") {
     S.separado = S.separado || {};
