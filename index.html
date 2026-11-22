@@ -962,12 +962,13 @@ function fmtCampo(n) { return (Math.round((Number(n) || 0) * 100) / 100).toFixed
 async function abrirAcertoReal() {
   var plano = planoDeHoje(); if (!plano) return false;
   var r = await uiDialog({ title: "Acertar com a realidade",
-    msg: "Você marcou a sua parte de hoje. Confira o dinheiro de verdade e o app refaz o plano daqui pra frente.\n\nPelo plano, agora você teria: pote " + R(plano.pote) + " · pra você " + R(plano.mim) + ".\n\nSe ainda vai pagar uma conta hoje, informe o que vai sobrar depois dela.",
+    msg: "Você marcou a sua parte de hoje. Confira o dinheiro de verdade e o app refaz o plano daqui pra frente.\n\nPelo plano, agora você teria: pote " + R(plano.pote) + " · pra você " + R(plano.mim) + ".\n\nInforme o saldo real depois de tudo que já aconteceu hoje (recebimentos, gastos e contas pagas).",
     ok: "Acertar", cancelText: "Agora não",
     campos: [{ rot: "Tenho no pote agora (R$)", valor: fmtCampo(plano.pote) }, { rot: "Tenho pra mim agora (R$)", valor: fmtCampo(plano.mim) }] });
   if (r === null) return false;
   var pote = parseMoney(r[0]), mim = parseMoney(r[1]);
-  if (!isFinite(pote) || !isFinite(mim) || pote < 0) { await uiAlert("Informe valores válidos. O pote não pode ser negativo.", { title: "Valores inválidos" }); return false; }
+  if (!isFinite(pote) || !isFinite(mim) || pote < 0 || mim < 0) { await uiAlert("Informe valores válidos. Pote e dinheiro para você não podem ser negativos.", { title: "Valores inválidos" }); return false; }
+  pote = Math.round(pote * 100) / 100; mim = Math.round(mim * 100) / 100;
   if (Math.abs(pote - plano.pote) < 0.005 && Math.abs(mim - plano.mim) < 0.005) { uiToast("O plano já bate com o seu dinheiro. Nada a acertar."); return false; }
   var ymR = S.ym, antes = (S.real && S.real[ymR]) ? JSON.parse(JSON.stringify(S.real[ymR])) : null;
   S.real = S.real || {}; S.real[ymR] = { d: new Date().getDate(), pote: pote, mim: mim };
@@ -1976,7 +1977,6 @@ function vMes() {
        '<div class="cd"><small>Falta pagar</small><b style="color:var(--bad)">' + R(fl) + '</b></div>' +
        '<div class="cd"><small>Entrou até agora</small><b>' + R(en) + '</b></div>' +
        '<div class="cd"><small>Sobra em mãos</small><b style="color:' + (sobraEmMaosLiquida < -0.005 ? "var(--bad)" : "var(--v)") + '">' + R(sobraEmMaosLiquida) + '</b></div>' +
-       (function(){ var realMes=(S.real||{})[S.ym], diaReal=realMes&&realMes.d?Math.max(1,Math.min(c.N,+realMes.d)):0, atualDia=diaReal&&c.days&&c.days[diaReal-1]; if(!realMes) { var hojeR=new Date(); if(hojeR.getFullYear()==c.Y&&hojeR.getMonth()+1==c.M) atualDia=c.days&&c.days[hojeR.getDate()-1]; } var poteAtual=realMes&&realMes.pote!=null?+realMes.pote:(atualDia?atualDia.pote:null), mimAtual=realMes&&realMes.mim!=null?+realMes.mim:(atualDia?atualDia.mim:null); return (poteAtual!=null?'<div class="cd"><small>Tenho no Pote agora</small><b style="color:var(--ok)">'+R(poteAtual)+'</b></div>':'')+(mimAtual!=null?'<div class="cd"><small>Tenho pra mim agora</small><b style="color:var(--v)">'+R(mimAtual)+'</b></div>':''); })() +
        '</div>' +
        (function(){
          var hojeSaldo = new Date(), diaSaldo = (hojeSaldo.getFullYear() === c.Y && hojeSaldo.getMonth()+1 === c.M) ? hojeSaldo.getDate() : (S.ym < currentYM ? c.N : 0),
@@ -2684,7 +2684,7 @@ document.addEventListener("change", async function(e){
       var plano = planoDeHoje(), linhas = [];
       if (plano) linhas.push("Pelo plano, hoje você teria: pote " + R(plano.pote) + " · pra você " + R(plano.mim) + ".");
       linhas.push("Você informou: " + (nv.pote !== null ? "pote " + R(nv.pote) : "") + (nv.pote !== null && nv.mim !== null ? " · " : "") + (nv.mim !== null ? "pra você " + R(nv.mim) : "") + ".");
-      linhas.push("O plano será refeito a partir de hoje. Se você ainda vai pagar uma conta hoje, informe o que vai sobrar depois dela. Dá para desfazer em seguida.");
+      linhas.push("O plano será refeito a partir de hoje. Informe os saldos após tudo que já aconteceu hoje. O plano será recalculado para os próximos dias; dá para desfazer em seguida.");
       if (!(await uiConfirm(linhas.join("\n\n"), { title: "Acertar com a realidade?", ok: "Refazer o plano" }))) { draw(); return; }
     }
     S.real = S.real || {};
@@ -2715,6 +2715,8 @@ document.addEventListener("change", async function(e){
       }
     }
   }
+  // Invalida caches antes de redesenhar: mudanças de acerto/renda/contas recalculam todas as telas.
+  CC = {}; MC = {};
   save(); draw();
   if (avisoReal) uiToast("Plano refeito a partir do dia " + avisoReal.d + ".", "Desfazer", function(){ desfazerReal(avisoReal.ym, avisoReal.antes); });
 });
@@ -2755,8 +2757,6 @@ document.addEventListener("click", async function(e){
     }
     if (vaiMarcar) S.paid[k] = true;
     else { delete S.paid[k]; delete S.paidAt[k]; }
-    // Ao confirmar uma diária de trabalho de hoje, abrir automaticamente o Acerto de Realidade.
-    if (rawKey && /^d\d+$/.test(rawKey) && vaiMarcar && ehHoje(+rawKey.slice(1))) pedirAcertoReal = true;
   }
   else if (a == "separar") {
     S.separado = S.separado || {};
@@ -2878,6 +2878,8 @@ document.addEventListener("click", async function(e){
     }
   }
   sincronizarMovimentosPagos(paidAntes, S.paid || {});
+  // Invalida caches em toda ação que altera dados financeiros ou marcações.
+  CC = {}; MC = {};
   save(); draw();
   if (pedirAcertoReal) { await abrirAcertoReal(); return; }
   if (undoSnap) uiToast(msgDesfazer(a, typeof vaiMarcar !== "undefined" ? vaiMarcar : true), "Desfazer", function(){ restoreUndo(undoSnap); });
