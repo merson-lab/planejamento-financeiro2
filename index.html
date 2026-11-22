@@ -2043,7 +2043,7 @@ function vMes() {
     ACERTO_DICA = false;
     try {
       var plD = isCurrentMonth ? planoDeHoje() : null;
-      dicaAcerto = '<div class="note" style="margin:0 0 8px"><b>Você marcou sua parte do dia.</b> ' +
+      dicaAcerto = '<div class="note" style="margin:0 0 8px"><b>Você marcou o dia de hoje.</b> ' +
         (plD ? 'Pelo plano, hoje você teria: pote <b>' + R(plD.pote) + '</b> · pra você <b>' + R(plD.mim) + '</b>. ' : '') +
         'Se o seu dinheiro estiver diferente disso, informe abaixo. Se estiver igual, não precisa mexer.</div>';
     } catch (eD) { dicaAcerto = ""; }
@@ -2718,7 +2718,7 @@ document.addEventListener("click", async function(e){
       paidAntes = Object.assign({}, S.paid || {}); S.paidAt = S.paidAt || {};
       S.paidAt[k] = dataPg;
     }
-    if (vaiMarcar) S.paid[k] = true;
+    if (vaiMarcar) { S.paid[k] = true; irAcertoReal = (S.ym === currentYM && /^d\d+$/.test(String(i)) && +String(i).slice(1) === new Date().getDate()); }
     else { delete S.paid[k]; delete S.paidAt[k]; }
   }
   else if (a == "separar") {
