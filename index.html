@@ -283,6 +283,14 @@ label{font-size:12px;color:var(--mut);font-weight:600}
 .ui-input{width:100%;margin-top:14px;padding:13px 14px;border:1px solid var(--line);border-radius:16px;background:var(--bg);color:var(--ink);font-size:16px;outline:0;color-scheme:dark}
 html[data-palette=light] .ui-input,html[data-palette=sage] .ui-input{color-scheme:light}
 .ui-input:focus{border-color:var(--c);box-shadow:0 0 0 4px rgba(61,220,151,.16)}
+.ui-campos{display:flex;flex-direction:column;margin-top:12px}
+.ui-lab{margin:10px 0 0;font-size:12px;font-weight:600;color:var(--mut)}
+.ui-campos .ui-input{margin-top:6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--card);border:1px solid var(--line)}
+.chip b{font-weight:800}
+.chip-eu{border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}
+.chip-pote{border-color:color-mix(in srgb,var(--blue) 45%,var(--line))}
 .ui-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
 .ui-btns button{min-width:92px;padding:12px 18px;border-radius:999px;border:1px solid var(--line);background:var(--card2);font-weight:600;font-size:14px}
 .ui-btns .ui-ok{border-color:transparent;background:linear-gradient(135deg,var(--v),var(--c));color:var(--onc)}
@@ -879,7 +887,7 @@ function uiNext() {
   var o = it.o, ov = document.createElement("div");
   ov.className = "ui-overlay"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true");
   ov.innerHTML = '<div class="ui-box">' + (o.title ? '<h3 class="ui-title"></h3>' : '') + '<p class="ui-msg"></p>' +
-    (o.input ? '<input class="ui-input" autocomplete="off">' : '') +
+    (o.campos ? '<div class="ui-campos"></div>' : (o.input ? '<input class="ui-input" autocomplete="off">' : '')) +
     '<div class="ui-btns">' + (o.cancel === false ? '' : '<button type="button" class="ui-cancel"></button>') + '<button type="button" class="ui-ok"></button></div></div>';
   if (o.title) ov.querySelector(".ui-title").textContent = o.title;
   ov.querySelector(".ui-msg").textContent = o.msg || "";
@@ -892,6 +900,18 @@ function uiNext() {
     inp.value = o.value == null ? "" : String(o.value);
     if (o.placeholder) inp.placeholder = o.placeholder;
   }
+  var inps = [];
+  if (o.campos) {
+    var cont = ov.querySelector(".ui-campos");
+    o.campos.forEach(function(cp){
+      var lab = document.createElement("label"), ip = document.createElement("input");
+      lab.className = "ui-lab"; lab.textContent = cp.rot || "";
+      ip.className = "ui-input"; ip.type = "text"; ip.setAttribute("inputmode", "decimal"); ip.setAttribute("autocomplete", "off");
+      ip.value = cp.valor == null ? "" : String(cp.valor); if (cp.ph) ip.placeholder = cp.ph;
+      cont.appendChild(lab); cont.appendChild(ip); inps.push(ip);
+    });
+  }
+  var temEntrada = !!(inp || inps.length);
   var idUi = "ui" + (++BACK.seq);
   function done(v, pelaVolta) {
     document.removeEventListener("keydown", onKey, true);
@@ -899,16 +919,20 @@ function uiNext() {
     if (pelaVolta !== true) backFechouPelaUI(idUi);
     it.resolve(v); uiNext();
   }
-  backAbrir(idUi, function(){ done(inp ? null : false, true); });
+  backAbrir(idUi, function(){ done(temEntrada ? null : false, true); });
   function onKey(e) {
-    if (e.key === "Escape" && cb) { e.preventDefault(); done(inp ? null : false); }
+    if (e.key === "Escape" && cb) { e.preventDefault(); done(temEntrada ? null : false); }
     else if (e.key === "Enter" && inp && document.activeElement === inp) { e.preventDefault(); okb.click(); }
+    else if (e.key === "Enter" && inps.length && inps.indexOf(document.activeElement) >= 0) {
+      e.preventDefault(); var k = inps.indexOf(document.activeElement);
+      if (k < inps.length - 1) inps[k + 1].focus(); else okb.click();
+    }
   }
-  okb.addEventListener("click", function(){ done(inp ? inp.value : true); });
-  if (cb) cb.addEventListener("click", function(){ done(inp ? null : false); });
+  okb.addEventListener("click", function(){ done(inps.length ? inps.map(function(x){ return x.value; }) : (inp ? inp.value : true)); });
+  if (cb) cb.addEventListener("click", function(){ done(temEntrada ? null : false); });
   document.addEventListener("keydown", onKey, true);
   document.body.appendChild(ov);
-  setTimeout(function(){ try { (inp || okb).focus(); if (inp && inp.select && o.input !== "date") inp.select(); } catch(e) {} }, 30);
+  setTimeout(function(){ try { var alvo = inp || inps[0] || okb; alvo.focus(); if ((inp || inps[0]) && alvo.select && o.input !== "date") alvo.select(); } catch(e) {} }, 30);
 }
 function uiAlert(msg, o) { return uiDialog(Object.assign({ msg: msg, cancel: false }, o || {})); }
 function uiConfirm(msg, o) { return uiDialog(Object.assign({ msg: msg }, o || {})); }
@@ -931,6 +955,25 @@ function planoDeHoje() {
 function novoReal(antes, f, v) {
   var val = v === "" ? null : (parseFloat(v) || 0);
   return { pote: f === "pote" ? val : (antes ? antes.pote : null), mim: f === "mim" ? val : (antes ? antes.mim : null) };
+}
+function ehHoje(dia) { var td = new Date(), p = S.ym.split("-"); return td.getFullYear() === +p[0] && td.getMonth() + 1 === +p[1] && td.getDate() === +dia; }
+function fmtCampo(n) { return (Math.round((Number(n) || 0) * 100) / 100).toFixed(2).replace(".", ",").replace(/,00$/, ""); }
+// Depois de marcar "Minha parte do dia" (hoje): confere o dinheiro de verdade e refaz o plano.
+async function abrirAcertoReal() {
+  var plano = planoDeHoje(); if (!plano) return false;
+  var r = await uiDialog({ title: "Acertar com a realidade",
+    msg: "Você marcou a sua parte de hoje. Confira o dinheiro de verdade e o app refaz o plano daqui pra frente.\n\nPelo plano, agora você teria: pote " + R(plano.pote) + " · pra você " + R(plano.mim) + ".\n\nSe ainda vai pagar uma conta hoje, informe o que vai sobrar depois dela.",
+    ok: "Acertar", cancelText: "Agora não",
+    campos: [{ rot: "Tenho no pote agora (R$)", valor: fmtCampo(plano.pote) }, { rot: "Tenho pra mim agora (R$)", valor: fmtCampo(plano.mim) }] });
+  if (r === null) return false;
+  var pote = parseMoney(r[0]), mim = parseMoney(r[1]);
+  if (!isFinite(pote) || !isFinite(mim) || pote < 0) { await uiAlert("Informe valores válidos. O pote não pode ser negativo.", { title: "Valores inválidos" }); return false; }
+  if (Math.abs(pote - plano.pote) < 0.005 && Math.abs(mim - plano.mim) < 0.005) { uiToast("O plano já bate com o seu dinheiro. Nada a acertar."); return false; }
+  var ymR = S.ym, antes = (S.real && S.real[ymR]) ? JSON.parse(JSON.stringify(S.real[ymR])) : null;
+  S.real = S.real || {}; S.real[ymR] = { d: new Date().getDate(), pote: pote, mim: mim };
+  CC = {}; MC = {}; save(); draw();
+  uiToast("Plano refeito a partir do dia " + S.real[ymR].d + ".", "Desfazer", function(){ desfazerReal(ymR, antes); });
+  return true;
 }
 function desfazerReal(ym, antes) {
   S.real = S.real || {};
@@ -2037,16 +2080,9 @@ function vMes() {
       podeHoje = podeInt; corHoje = cor;
     } catch (e) { spend = ""; }
   }
-  var rl2 = (S.real || {})[S.ym], snap = "", planoTopo = "", planoResumo = "";
+  var rl2 = (S.real || {})[S.ym], snap = "";
   if (isCurrentMonth) {
-    try {
-      var plD = planoDeHoje();
-      if (plD) {
-        planoTopo = '<div class="note" style="margin:0 0 8px"><b>Pelo plano, hoje você teria:</b> pote <b>' + R(plD.pote) + '</b> · pra você <b>' + R(plD.mim) + '</b>.</div>';
-        planoResumo = "Pelo plano, hoje: pote " + R(plD.pote) + " · pra você " + R(plD.mim);
-      }
-    } catch (eP) { planoTopo = ""; planoResumo = ""; }
-    snap = secao("acertar", "🔄", "Acertar com a realidade", (planoResumo ? planoResumo + (rl2 ? " (plano refeito do dia " + rl2.d + ")" : "") : (rl2 ? "plano refeito a partir do dia " + rl2.d : "use se o dinheiro não bate")), '<div class="card fld">' + planoTopo + '<div class="note" style="margin:0 0 6px">Se o dinheiro que você tem agora é diferente do plano, diga quanto tem e eu refaço as contas daqui pra frente.</div>' +
+    snap = secao("acertar", "🔄", "Acertar com a realidade", rl2 ? "plano refeito a partir do dia " + rl2.d : "use se o dinheiro não bate", '<div class="card fld"><div class="note" style="margin:0 0 6px">Se o dinheiro que você tem agora é diferente do plano, diga quanto tem e eu refaço as contas daqui pra frente.</div>' +
            '<div class="g2"><div><label>Tenho no pote agora (R$)</label>' + inp("r","0","pote", rl2 && rl2.pote != null ? rl2.pote : "", "number") + '</div>' +
            '<div><label>Tenho pra mim agora (R$)</label>' + inp("r","0","mim", rl2 && rl2.mim != null ? rl2.mim : "", "number") + '</div></div>' +
            (rl2 ? '<div class="note">Plano refeito a partir do dia ' + rl2.d + ' com o que você informou.</div><button class="del" data-a="rclr" style="margin-top:0">Voltar ao plano original</button>' : '') + '</div>', !!rl2);
@@ -2523,13 +2559,13 @@ function vCalendario() {
          '<span class="grow"><b>' + (diaExtra(selDay) ? 'Diária extra' : 'Diária de Trabalho') + '</b><small>Entra ' + R(ic("dia")) + '</small></span>' +
          '</button>';
     var parteMarcada = !!((S.separado || {})[S.ym + "d" + selDay]);
-    var valorMinhaParte = Math.max(0, Number(ic("dia") || 0) - gDoDia(c, selDay));
-    var valorPoteDia = Math.max(0, gDoDia(c, selDay));
+    var valorMinhaParte = Math.max(0, Number(ic("dia") || 0) - gDoDia(c, selDay)), valorPote = Math.max(0, Number(ic("dia") || 0) - valorMinhaParte);
     h += '<button class="row' + (parteMarcada ? " done" : "") + '" data-a="separar" data-i="' + selDay + '" style="margin-top:6px;align-items:flex-start;">' +
          '<span class="chk">' + (parteMarcada ? "✓" : "") + '</span>' +
-         '<span class="grow"><b>Minha parte do dia</b><small>Valor planejado para você: <b>' + R(valorMinhaParte) + '</b></small><small>Vai pro pote das contas: <b>' + R(valorPoteDia) + '</b></small><small>' +
-         (parteMarcada ? '✓ Você confirmou que separou/recebeu ' + R(valorMinhaParte) + '.' : 'Marque quando separar ou receber esse valor.') +
-         '</small></span><span class="amt in">' + R(valorMinhaParte) + '</span></button>';
+         '<span class="grow"><b>Minha parte do dia</b>' +
+         '<span class="chips"><span class="chip chip-eu">💚 Pra você <b>' + R(valorMinhaParte) + '</b></span><span class="chip chip-pote">🫙 Pro pote <b>' + R(valorPote) + '</b></span></span>' +
+         '<small>' + (parteMarcada ? '✓ Você confirmou: ' + R(valorMinhaParte) + ' pra você e ' + R(valorPote) + ' no pote.' : 'Marque quando separar o dinheiro do pote e guardar a sua parte.' + (ehHoje(selDay) ? ' Ao marcar, o app confere com você o dinheiro de verdade.' : '')) +
+         '</small></span></button>';
   }
   
   if (selInfo.ev.length === 0) {
@@ -2687,6 +2723,7 @@ document.addEventListener("click", async function(e){
   var a = t.dataset.a, i = t.dataset.i;
   var paidAntes = Object.assign({}, S.paid || {});
   var undoSnap = UNDO_ACOES.indexOf(a) >= 0 ? snapUndo() : null;
+  var pedirAcertoReal = false;
   if (a == "tab") { tab = +i; try{localStorage.setItem(startTabStorageKey(),String(tab));}catch(e){} }
   else if (a == "pm" || a == "nm") {
     var p = S.ym.split("-"), d = new Date(+p[0], +p[1] - 1 + (a == "nm" ? 1 : -1), 1);
@@ -2721,7 +2758,7 @@ document.addEventListener("click", async function(e){
   else if (a == "separar") {
     S.separado = S.separado || {};
     var sk = S.ym + "d" + i;
-    if (S.separado[sk]) delete S.separado[sk]; else S.separado[sk] = true;
+    if (S.separado[sk]) delete S.separado[sk]; else { S.separado[sk] = true; pedirAcertoReal = ehHoje(i); }
   }
   else if (a == "movin" || a == "movout") {
     var desc = await uiPrompt("Descrição da movimentação:", a === "movin" ? "Entrada no Pote" : "Saída do Pote", { title: a === "movin" ? "Entrada no pote" : "Saída do pote" });
@@ -2839,6 +2876,7 @@ document.addEventListener("click", async function(e){
   }
   sincronizarMovimentosPagos(paidAntes, S.paid || {});
   save(); draw();
+  if (pedirAcertoReal) { await abrirAcertoReal(); return; }
   if (undoSnap) uiToast(msgDesfazer(a, typeof vaiMarcar !== "undefined" ? vaiMarcar : true), "Desfazer", function(){ restoreUndo(undoSnap); });
 });
 
