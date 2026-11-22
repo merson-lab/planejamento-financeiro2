@@ -227,6 +227,13 @@ label{font-size:12px;color:var(--mut);font-weight:600}
 @keyframes shine{0%{transform:skewX(-20deg) translateX(0)}55%,100%{transform:skewX(-20deg) translateX(450%)}}
 .au-main:active{transform:scale(.98)}
 @media(prefers-reduced-motion:reduce){.au-bg *,.au-card,.au-card>*,.au-card::before,.au-logo,.au-main,.au-main::after{animation:none!important}.au-bars i{transform:scaleY(.5)}.au-chart .line{stroke-dashoffset:0}.au-chart .fill{opacity:1}}
+.sec-btn{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;margin:0 0 10px;padding:13px 16px;border-radius:18px;border:1px solid var(--line);background:var(--card2);font-weight:700;font-size:14px;text-align:left}
+.sec-btn small{display:block;margin-top:2px;color:var(--mut);font-weight:500;font-size:12px}
+.sec-btn i{font-style:normal;color:var(--mut)}
+.sec-btn[aria-expanded=true]{border-color:var(--c)}
+.sec-link{padding:6px 0;border:0;background:none;color:var(--v);font-weight:700;font-size:13px;text-align:left}
+.reserva{margin:10px 0 14px;padding:14px}
+.reserva-v{margin:6px 0 2px;font-size:15px;font-weight:700;line-height:1.4}
 .hoje{padding:16px;margin-bottom:12px;border-radius:26px;border:1px solid color-mix(in srgb,var(--v) 40%,var(--line));background:radial-gradient(120% 100% at 0% 0%,color-mix(in srgb,var(--v) 18%,transparent),transparent 60%),var(--card)}
 .hoje-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .hoje-top b{font-size:12px;color:var(--mut);letter-spacing:.02em}
@@ -731,8 +738,8 @@ function destroyDashboardCharts() {
   });
 }
 function renderDashboardCharts(c, rs) {
-  if (!window.Chart || !document.getElementById("balanceChart")) return;
   destroyDashboardCharts();
+  if (!window.Chart || !document.getElementById("balanceChart")) return;
   var cs = getComputedStyle(document.documentElement);
   var V = function(n, f){ return (cs.getPropertyValue(n) || "").trim() || f; };
   var cMain = V("--c", "#3ddc97"), cAcc = V("--v", "#a6ff3d"), cInk = V("--ink", "#f1f5f3"), cMut = V("--mut", "#8b9893"), cCard = V("--card", "#141817"), cLine = V("--line", "#252c2a");
@@ -1775,12 +1782,58 @@ function mao(ym) {
   S.ym = o; return (MC[ym] = v);
 }
 
+// ==========================================
+// SEÇÕES QUE ABREM/FECHAM NA ABA MÊS + RESERVA PRO MÊS QUE VEM
+// ==========================================
+var SEC_KEY = "plano-mes-abertas";
+var MESOP = (function(){ try { return JSON.parse(localStorage.getItem(SEC_KEY) || "{}") || {}; } catch(e) { return {}; } })();
+function secAberta(id, padrao) { return MESOP[id] === undefined ? !!padrao : !!MESOP[id]; }
+function secBtn(id, titulo, resumo, aberta) {
+  return '<button type="button" class="sec-btn" data-a="sec" data-i="' + id + '" aria-expanded="' + (aberta ? "true" : "false") + '"><span>' + titulo + (resumo ? '<small>' + resumo + '</small>' : '') + '</span><i aria-hidden="true">' + (aberta ? "▾" : "▸") + '</i></button>';
+}
+function secLink(id, titulo, aberta) {
+  return '<button type="button" class="sec-link" data-a="sec" data-i="' + id + '" aria-expanded="' + (aberta ? "true" : "false") + '">' + (aberta ? "▾ " : "▸ ") + titulo + '</button>';
+}
+function proxYM(ym) { var p = ym.split("-"), d = new Date(+p[0], +p[1], 1); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2); }
+// Calcula um mês começando com um pote hipotético (sem alterar nenhum dado do usuário).
+function simularMes(ym, poteIni) {
+  var o = S.ym, i0 = ini0, m0 = mim0;
+  S.ym = ym; ini0 = function(){ return poteIni; }; mim0 = function(){ return 0; };
+  try { return calc(); } finally { S.ym = o; ini0 = i0; mim0 = m0; }
+}
+function contasNoInicio(c2, nDias) {
+  var x = 0;
+  (c2.L || []).forEach(function(b){
+    if (b.t === "dd") { for (var d = 1; d <= nDias; d++) if (b.on && b.on[d]) x += +b.a || 0; }
+    else if (b.t === "s") (b.weekOccurrences || []).forEach(function(w){ if (w.d >= 1 && w.d <= nDias) x += +b.a || 0; });
+    else if (Math.min(b.d || 1, c2.N) <= nDias) x += +b.a || 0;
+  });
+  return x;
+}
+function reservaCard(c) {
+  try {
+    var nDias = 10, P = Math.max(0, Number(c.endPote) || 0), c2 = simularMes(proxYM(S.ym), P), X = contasNoInicio(c2, nDias),
+        cobre = P >= X - 0.005, falta = Math.max(0, X - P), ab = secAberta("reserva", false), det = "";
+    if (ic("tipoRenda") === "diaria") {
+      var c0 = simularMes(proxYM(S.ym), 0);
+      det += 'Com essa reserva, no começo do mês que vem você separa <b>' + R(c2.g) + '</b> por diária pro pote. Sem reserva, seriam <b>' + R(c0.g) + '</b>. ';
+    }
+    det += 'Contei as contas dos primeiros ' + nDias + ' dias do mês que vem (inclusive as diárias e semanais). Parte disso pode ser paga com a renda que entrar nesses dias; a reserva serve para você não depender só dela. É só um aviso: nada sai do seu “pra você” sozinho. Se faltar, você decide se separa um pouco mais por diária ainda neste mês.';
+    return '<div class="card reserva" style="border-color:' + (cobre ? "var(--ok)" : "#d97706") + '">' +
+      '<small style="color:var(--mut);font-weight:700">🛟 RESERVA PRO MÊS QUE VEM</small>' +
+      '<div class="reserva-v" style="color:' + (cobre ? "var(--ok)" : "#d97706") + '">' +
+        (X <= 0.005 ? "✅ Nenhuma conta nos primeiros " + nDias + " dias do mês que vem." : (cobre ? "✅ A reserva cobre o começo do mês que vem." : "⚠️ A reserva cobre " + Math.round(P / X * 100) + "% das contas dos primeiros " + nDias + " dias. Faltam " + R(falta) + ".")) + '</div>' +
+      '<div class="hoje-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div><small>Pote previsto no fim do mês</small><b>' + R(P) + '</b></div><div><small>Contas dos primeiros ' + nDias + ' dias</small><b>' + R(X) + '</b></div></div>' +
+      secLink("reserva", "Como isso é calculado", ab) + (ab ? '<div class="note">' + det + '</div>' : '') + '</div>';
+  } catch (e) { return ""; }
+}
+
 function vMes() {
   var c = calc(),
       h = '<div class="nav"><button data-a="pm">‹</button><b>' + MS[c.M-1] + ' de ' + c.Y + '</b><button data-a="nm">›</button></div>';
   
   h += "<!--HOJE-->";
-  h += '<div class="note card"><b>Como o Mês se conecta:</b> aqui você acompanha o resumo e as projeções. As marcações de recebimentos e pagamentos no Calendário alteram os cálculos; Renda define valores e frequência, e Contas define despesas e vencimentos. Os valores previstos podem mudar quando você confirma ou altera eventos.</div>';
+  h += secBtn("ajuda", "ℹ️ Como o Mês funciona", "", secAberta("ajuda", false)) + (secAberta("ajuda", false) ? '<div class="note card">Aqui você acompanha o resumo e as projeções. As marcações de recebimentos e pagamentos no Calendário alteram os cálculos; Renda define valores e frequência, e Contas define despesas e vencimentos. Os valores previstos podem mudar quando você confirma ou altera eventos.</div>' : '');
   h += '<button class="add" data-a="tab" data-i="2" style="margin:0 0 12px;background:var(--c);color:var(--bg);border-color:var(--c)">📅 Abrir calendário para marcar diárias e pagamentos →</button>';
   var td = new Date();
   var isCurrentMonth = td.getFullYear() == c.Y && (td.getMonth() + 1) == c.M;
@@ -1841,23 +1894,24 @@ function vMes() {
          return '<div class="card" style="border:2px solid var(--v);margin:10px 0 14px;padding:14px">' +
            '<small style="color:var(--mut);font-weight:700">DINHEIRO ACUMULADO PRA VOCÊ ' + (diaSaldo ? 'ATÉ O DIA ' + diaSaldo : '') + '</small>' +
            '<div style="font-size:30px;font-weight:850;color:var(--v);margin:5px 0">' + R(acumuladoMim) + '</div>' +
-           '<div class="note">Esse é o saldo planejado que vai se juntando dia após dia: soma a sua parte das rendas e desconta gastos e valores autorizados para completar o Pote.</div>' +
-           '<div class="attention-note"><b>⚠ Ponto de atenção:</b> é uma previsão baseada no que está cadastrado e marcado. Para saber o dinheiro realmente disponível, confira o saldo real e o extrato.</div>' +
+           secLink("entenda", "Entenda esse número", secAberta("entenda", false)) + (secAberta("entenda", false) ? '<div class="note">Esse é o saldo planejado que vai se juntando dia após dia: soma a sua parte das rendas e desconta gastos e valores autorizados para completar o Pote.</div><div class="attention-note"><b>⚠ Ponto de atenção:</b> é uma previsão baseada no que está cadastrado e marcado. Para saber o dinheiro realmente disponível, confira o saldo real e o extrato.</div>' : '') +
            (diaSaldo ? '<div class="note" style="margin-top:6px">' + (variacaoDiaMim >= 0 ? 'Hoje aumentou ' : 'Hoje diminuiu ') + '<b>' + R(Math.abs(variacaoDiaMim)) + '</b> em relação a ontem.</div>' : '<div class="note">O acumulado aparece quando houver dias calculados neste mês.</div>') +
            '</div>';
        })() +
-       '<div class="analytics-kicker">ANÁLISE INTELIGENTE</div><h2 class="analytics-heading">Visão dos seus números</h2>' +
+       (isCurrentMonth ? reservaCard(c) : "") +
+       secBtn("graficos", "📊 Gráficos do mês", "evolução, contas e comparativo", secAberta("graficos", false)) +
+       (secAberta("graficos", false) ? ('<div class="analytics-kicker">ANÁLISE INTELIGENTE</div><h2 class="analytics-heading">Visão dos seus números</h2>' +
        '<div class="charts-grid">' +
        '<section class="chart-panel wide"><h3 class="chart-title">Evolução do dinheiro ao longo do mês</h3><p class="chart-subtitle">Acompanhe o pote das contas e o valor disponível para você, dia a dia</p><div class="chart-wrap"><canvas id="balanceChart" aria-label="Gráfico da evolução dos saldos"></canvas></div><div class="attention-note"><b>⚠ Ponto de atenção:</b> as linhas mostram saldos previstos no fechamento de cada dia, não comprovantes bancários. A linha em degraus indica que o saldo muda nas datas de entradas e pagamentos. Se uma renda não cair ou uma conta for paga em outra data, atualize o calendário.</div></section>' +
        '<section class="chart-panel"><h3 class="chart-title">Distribuição das contas</h3><p class="chart-subtitle">Veja quais contas representam maior parte dos gastos previstos</p><div class="chart-wrap compact"><canvas id="expenseChart" aria-label="Gráfico de distribuição das contas"></canvas></div><div class="attention-note"><b>⚠ Ponto de atenção:</b> mostra a participação de cada conta no total previsto do mês. Não significa que todas já foram pagas. Contas recorrentes são somadas conforme as ocorrências previstas.</div></section>' +
        '<section class="chart-panel"><h3 class="chart-title">Comparativo financeiro</h3><p class="chart-subtitle">Receitas, contas previstas e pagamentos realizados</p><div class="chart-wrap compact"><canvas id="paymentChart" aria-label="Gráfico comparativo financeiro"></canvas></div><div class="attention-note"><b>⚠ Ponto de atenção:</b> as barras têm significados diferentes: receitas previstas são o total estimado de entradas; contas previstas são o total de despesas do mês; já pagas é apenas a parte das despesas confirmada como paga. Compare os valores considerando essa diferença.</div></section>' +
-       '</div>' +
+       '</div>') : "") +
        '<div class="bar"><i style="width:' + (tT > 0 ? Math.min(100, Math.round(pg / tT * 100)) : 0) + '%"></i></div>' +
        '<div class="note" style="margin-top:0">' + (tT > 0 ? Math.min(100, Math.round(pg / tT * 100)) : 0) + '% das contas do mês já pagas</div>' +
        '<div class="note">Previsão de sobra no fim do mês: <b>' + R(mc + iT - tT) + '</b>' +
        (ic("tipoRenda") === "diaria" ? ' · ' + nd + ' de ' + c.w + ' diárias marcadas' : '') +
        (Math.abs(mc) > 0.005 ? '<br>Inclui ' + R(mc) + ' que sobrou dos meses anteriores.' : '') + '</div>' +
-       '<div class="attention-note"><b>⚠ Ponto de atenção:</b> a sobra final é uma projeção matemática. Ela pode mudar se você alterar valores, datas, recebimentos, pagamentos ou gastos pessoais.</div>';
+       '<div class="attention-note"><b>⚠</b> A sobra final é uma projeção: muda se você alterar valores, datas ou marcações.</div>';
 
   var ban = "", td1 = isCurrentMonth ? td.getDate() : 1,
       fut = (c.days0 || []).filter(function(x){ return x.sh > 0.005 && x.d >= td1; }),
@@ -1938,10 +1992,10 @@ function vMes() {
   }
   var rl2 = (S.real || {})[S.ym], snap = "";
   if (isCurrentMonth) {
-    snap = '<div class="card fld"><b>🔄 Acertar com a realidade</b><div class="note" style="margin:4px 0 6px">Se o dinheiro que você tem agora é diferente do plano, diga quanto tem e eu refaço as contas daqui pra frente.</div>' +
+    snap = secBtn("acertar", "🔄 Acertar com a realidade", rl2 ? "plano refeito a partir do dia " + rl2.d : "use se o dinheiro não bate", secAberta("acertar", !!rl2)) + (!secAberta("acertar", !!rl2) ? "" : '<div class="card fld"><div class="note" style="margin:0 0 6px">Se o dinheiro que você tem agora é diferente do plano, diga quanto tem e eu refaço as contas daqui pra frente.</div>' +
            '<div class="g2"><div><label>Tenho no pote agora (R$)</label>' + inp("r","0","pote", rl2 && rl2.pote != null ? rl2.pote : "", "number") + '</div>' +
            '<div><label>Tenho pra mim agora (R$)</label>' + inp("r","0","mim", rl2 && rl2.mim != null ? rl2.mim : "", "number") + '</div></div>' +
-           (rl2 ? '<div class="note">Plano refeito a partir do dia ' + rl2.d + ' com o que você informou.</div><button class="del" data-a="rclr" style="margin-top:0">Voltar ao plano original</button>' : '') + '</div>';
+           (rl2 ? '<div class="note">Plano refeito a partir do dia ' + rl2.d + ' com o que você informou.</div><button class="del" data-a="rclr" style="margin-top:0">Voltar ao plano original</button>' : '') + '</div>');
   }
 
   var permH = "", pend = [], decided = [], pendTot = 0;
@@ -2586,6 +2640,11 @@ document.addEventListener("click", async function(e){
   }
   else if (a == "selday") selDay = +i;
   else if (a == "guia") { abrirGuia(true); return; }
+  else if (a == "sec") {
+    var abertaAgora = secAberta(i, i === "acertar" ? !!((S.real || {})[S.ym]) : false);
+    MESOP[i] = !abertaAgora; try { localStorage.setItem(SEC_KEY, JSON.stringify(MESOP)); } catch(e) {}
+    draw(); return;
+  }
   else if (a == "tvenc") VOPEN = !VOPEN;
   else if (a == "tog") {
     var k = S.ym + i, vaiMarcar = !S.paid[k], rawKey = i, detalhe = detalhePagamento(k);
