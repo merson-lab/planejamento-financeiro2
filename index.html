@@ -1975,7 +1975,7 @@ $a(id).addEventListener("keydown", function(e){ if (e.key === "Enter") authSubmi
 });
 $a("auth-forgot").addEventListener("click", function(){
 var email = $a("auth-email").value.trim();
-if (!email) { authMsg("Digite seu e-mail acima e toque de novo em "Esqueceu a senha?"."); return; }
+if (!email) { authMsg("Digite seu e-mail acima e toque de novo em \"Esqueceu a senha?\"."); return; }
 auth.sendPasswordResetEmail(email)
 .then(function(){ authMsg("Enviei um link pra redefinir a senha em " + email + ". Olhe também o spam.", true); })
 .catch(function(e){ authMsg(authErr(e)); });
