@@ -971,14 +971,19 @@ async function abrirAcertoReal() {
   pote = Math.round(pote * 100) / 100; mim = Math.round(mim * 100) / 100;
   if (Math.abs(pote - plano.pote) < 0.005 && Math.abs(mim - plano.mim) < 0.005) { uiToast("O plano já bate com o seu dinheiro. Nada a acertar."); return false; }
   var ymR = S.ym, antes = (S.real && S.real[ymR]) ? JSON.parse(JSON.stringify(S.real[ymR])) : null;
+  var movAntes = (S.movimentos || []).slice();
   S.real = S.real || {}; S.real[ymR] = { d: new Date().getDate(), pote: pote, mim: mim };
+  var atualMov = (S.movimentos || []).reduce(function(t, m){ return t + (Number(m.valor) || 0); }, 0);
+  var diffMov = pote - atualMov;
+  if (Math.abs(diffMov) > 0.004) registrarMovimento("ajuste", "Acerto com a realidade", diffMov, dataLocalISO());
   CC = {}; MC = {}; save(); draw();
-  uiToast("Plano refeito a partir do dia " + S.real[ymR].d + ".", "Desfazer", function(){ desfazerReal(ymR, antes); });
+  uiToast("Plano refeito a partir do dia " + S.real[ymR].d + ".", "Desfazer", function(){ desfazerReal(ymR, antes, movAntes); });
   return true;
 }
-function desfazerReal(ym, antes) {
+function desfazerReal(ym, antes, movAntes) {
   S.real = S.real || {};
   if (antes) S.real[ym] = antes; else delete S.real[ym];
+  if (Array.isArray(movAntes)) S.movimentos = movAntes;
   CC = {}; MC = {}; save(); draw();
 }
 var UI_TOAST = null;
@@ -2680,6 +2685,7 @@ document.addEventListener("change", async function(e){
   else if (sc == "r") {
     S.real = S.real || {};
     var ymR = S.ym, antesR = S.real[ymR] ? JSON.parse(JSON.stringify(S.real[ymR])) : null, nv = novoReal(antesR, f, v);
+    var movAntesR = (S.movimentos || []).slice();
     if (nv.pote !== null || nv.mim !== null) {
       var plano = planoDeHoje(), linhas = [];
       if (plano) linhas.push("Pelo plano, hoje você teria: pote " + R(plano.pote) + " · pra você " + R(plano.mim) + ".");
@@ -2691,7 +2697,14 @@ document.addEventListener("change", async function(e){
     var rr = S.real[ymR] || (S.real[ymR] = { d: 1, pote: null, mim: null });
     rr.d = new Date().getDate(); rr.pote = nv.pote; rr.mim = nv.mim;
     if (rr.pote === null && rr.mim === null) delete S.real[ymR];
-    else avisoReal = { ym: ymR, antes: antesR, d: rr.d };
+    else {
+      if (rr.pote !== null && rr.pote !== undefined) {
+        var atualMovR = (S.movimentos || []).reduce(function(t, m){ return t + (Number(m.valor) || 0); }, 0);
+        var diffMovR = (+rr.pote || 0) - atualMovR;
+        if (Math.abs(diffMovR) > 0.004) registrarMovimento("ajuste", "Acerto com a realidade", diffMovR, dataLocalISO());
+      }
+      avisoReal = { ym: ymR, antes: antesR, movAntes: movAntesR, d: rr.d };
+    }
   }
   else if (sc == "c") {
     if (f == "tipoRenda") setC("tipoRenda", v);
@@ -2718,7 +2731,7 @@ document.addEventListener("change", async function(e){
   // Invalida caches antes de redesenhar: mudanças de acerto/renda/contas recalculam todas as telas.
   CC = {}; MC = {};
   save(); draw();
-  if (avisoReal) uiToast("Plano refeito a partir do dia " + avisoReal.d + ".", "Desfazer", function(){ desfazerReal(avisoReal.ym, avisoReal.antes); });
+  if (avisoReal) uiToast("Plano refeito a partir do dia " + avisoReal.d + ".", "Desfazer", function(){ desfazerReal(avisoReal.ym, avisoReal.antes, avisoReal.movAntes); });
 });
 
 document.addEventListener("click", async function(e){
