@@ -15,9 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-<!-- Gráficos interativos -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -86,8 +84,6 @@ h2{font-size:18px;margin-bottom:8px}
 h3{font-size:15px}
 :focus-visible{outline:2px solid var(--v);outline-offset:2px}
 .sync{font-size:11px;color:var(--mut);text-align:center;min-height:14px;margin:0 0 8px}
-
-/* topo */
 .app-topbar{
   display:flex;
   justify-content:space-between;
@@ -156,8 +152,6 @@ h3{font-size:15px}
   transition:all .2s
 }
 .logout-button:hover{background:rgba(239,68,68,0.1);border-color:var(--bad);color:var(--bad)}
-
-/* abas inferiores */
 .tabs{
   background:var(--card);
   backdrop-filter:blur(20px);
@@ -188,8 +182,6 @@ h3{font-size:15px}
   box-shadow:0 0 20px rgba(16,185,129,0.2)
 }
 .tab-label{white-space:nowrap}
-
-/* mês / navegação */
 .nav{display:flex;justify-content:space-between;align-items:center;margin:4px 0 14px}
 .nav b{font-size:22px;font-weight:700;text-transform:capitalize;font-family:"Space Grotesk",sans-serif}
 .nav button{
@@ -204,8 +196,6 @@ h3{font-size:15px}
   transition:all .2s
 }
 .nav button:hover{background:var(--card2);border-color:var(--c)}
-
-/* cartões */
 .card,.cd,.big,.chart-panel{
   background:var(--card);
   backdrop-filter:blur(20px);
@@ -256,8 +246,6 @@ h3{font-size:15px}
 .alert-box,.attention-note{color:var(--warn);border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.05)}
 .attention-note{color:var(--mut);margin:10px 0 0;font-size:11px}
 .attention-note b{color:var(--warn)}
-
-/* lançamentos (lista de transações) */
 .row{
   display:flex;
   gap:12px;
@@ -304,8 +292,6 @@ h3{font-size:15px}
   transition:all .2s
 }
 .row input:focus{border-color:var(--c);box-shadow:0 0 0 3px rgba(16,185,129,0.15)}
-
-/* formulários */
 label{font-size:12px;color:var(--mut);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
 .card input,.card select,.fld input,.fld select,textarea,.settings-select{
   width:100%;
@@ -370,8 +356,6 @@ label{font-size:12px;color:var(--mut);font-weight:600;text-transform:uppercase;l
 .pb .no.on{background:var(--bad);color:#fff;border-color:transparent}
 .bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin:0 0 6px}
 .bar i{display:block;height:100%;border-radius:99px;background:var(--gradient-aurora)}
-
-/* calendário */
 .cal-grid{
   display:grid;
   grid-template-columns:repeat(7,minmax(0,1fr));
@@ -406,8 +390,6 @@ label{font-size:12px;color:var(--mut);font-weight:600;text-transform:uppercase;l
 .cal-num{font-size:16px;line-height:1;font-weight:500}
 .cal-day.sel{background:var(--gradient-card)}
 .cal-day.hj .cal-num{color:var(--blue);font-weight:700}
-
-/* gráficos */
 .charts-grid{display:grid;grid-template-columns:1fr;gap:12px;margin:14px 0}
 .chart-panel.wide{grid-column:1/-1}
 .chart-panel{margin:0}
@@ -416,8 +398,6 @@ label{font-size:12px;color:var(--mut);font-weight:600;text-transform:uppercase;l
 .chart-wrap{height:230px;position:relative}
 .chart-wrap.compact{height:220px}
 @media(min-width:760px){.charts-grid{grid-template-columns:1.4fr 1fr}}
-
-/* login */
 #auth-screen{
   min-height:100vh;
   align-items:center;
@@ -501,8 +481,6 @@ label{font-size:12px;color:var(--mut);font-weight:600;text-transform:uppercase;l
 .au-msg{min-height:18px;margin:12px 0 0;text-align:center;font-size:13px;color:var(--bad)}
 .au-msg.ok{color:var(--ok)}
 .au-switch{text-align:center;color:var(--mut);font-size:13px;margin:10px 0 0}
-
-/* configurações */
 .settings-overlay{
   position:fixed;
   inset:0;
@@ -577,14 +555,11 @@ label{font-size:12px;color:var(--mut);font-weight:600;text-transform:uppercase;l
 .settings-danger{width:100%;color:var(--bad);border-color:rgba(239,68,68,0.3);background:transparent}
 .settings-danger:hover{background:rgba(239,68,68,0.1)}
 .settings-status{font-size:12px;color:var(--mut);margin-top:8px}
-
 @media(max-width:380px){
   .cards{grid-template-columns:1fr}
   .logout-button{display:none}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-
-/* ===== calendário com nomes ===== */
 .cal-day{min-height:66px;padding:8px 0 4px;gap:4px;min-width:0;overflow:hidden}
 .cal-dots{flex-direction:column;align-items:stretch;gap:2px;width:100%;padding:0 2px;min-height:6px;flex-wrap:nowrap}
 .cal-badge{
@@ -612,8 +587,6 @@ label{font-size:12px;color:var(--mut);font-weight:600;text-transform:uppercase;l
   .cal-badge::before{width:7px;height:7px;margin-top:-3.5px}
   .cal-day{min-height:84px}
 }
-
-/* ===== cartões coloridos ===== */
 .cards .cd{
   --t:#10b981;
   position:relative;
@@ -638,8 +611,6 @@ label{font-size:12px;color:var(--mut);font-weight:600;text-transform:uppercase;l
 .cards .cd:nth-child(6n+6){--t:#06b6d4}
 .cards .cd b{color:var(--ink)}
 .big{position:relative;overflow:hidden}
-
-/* ===== painéis de gráfico ===== */
 .chart-panel{
   position:relative;
   overflow:hidden;
@@ -668,8 +639,6 @@ label{font-size:12px;color:var(--mut);font-weight:600;text-transform:uppercase;l
   background:var(--gradient-aurora);
   box-shadow:0 0 10px var(--c)
 }
-
-/* ===== login animado ===== */
 #auth-screen[style*="block"],#auth-screen[style*="flex"]{position:fixed!important;inset:0;z-index:60;overflow:auto}
 .au-bg{position:fixed;inset:0;overflow:hidden;z-index:0;pointer-events:none}
 .au-bg .blob{position:absolute;width:62vmax;height:62vmax;border-radius:50%;opacity:.5}
@@ -782,7 +751,6 @@ label{font-size:12px;color:var(--mut);font-weight:600;text-transform:uppercase;l
   .au-chart .line{stroke-dashoffset:0}
   .au-chart .fill{opacity:1}
 }
-
 .sec-btn{
   display:flex;
   justify-content:space-between;
@@ -829,7 +797,6 @@ label{font-size:12px;color:var(--mut);font-weight:600;text-transform:uppercase;l
 .hoje-grid small{display:block;font-size:10.5px;line-height:1.25;color:var(--mut)}
 .hoje-grid b{display:block;margin-top:4px;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:"Space Grotesk",sans-serif}
 .hoje-row{font-size:13px;line-height:1.5}
-
 .guia{
   position:fixed;
   inset:0;
@@ -888,7 +855,6 @@ label{font-size:12px;color:var(--mut);font-weight:600;text-transform:uppercase;l
   transition:all .2s
 }
 .guia-btns .guia-pri{border-color:transparent;background:var(--gradient-aurora);color:#fff;box-shadow:0 4px 20px rgba(16,185,129,0.3)}
-
 .ui-overlay{
   position:fixed;
   inset:0;
@@ -949,7 +915,6 @@ html[data-palette=light] .ui-input,html[data-palette=sage] .ui-input{color-schem
 .help-rules b{color:var(--ink)}
 .help-gl div{margin:10px 0;line-height:1.6}
 .help-gl b{color:var(--ink)}
-
 .ui-toast{
   position:fixed;
   left:50%;
@@ -980,7 +945,6 @@ html[data-palette=light] .ui-input,html[data-palette=sage] .ui-input{color-schem
   box-shadow:0 4px 15px rgba(16,185,129,0.3)
 }
 @keyframes uiPopT{from{opacity:0;transform:translateX(-50%) translateY(12px)}}
-
 #lem-opts{margin-top:10px}
 #lem-opts .settings-row{margin-bottom:10px}
 .bk-list{max-height:46vh;overflow:auto;margin-top:10px}
@@ -1011,11 +975,9 @@ html[data-palette=light] .ui-input,html[data-palette=sage] .ui-input{color-schem
 }
 .bk-btns button:hover{border-color:var(--c)}
 .bk-btns button[data-bk=rest]{background:var(--gradient-aurora);color:#fff;border-color:transparent;box-shadow:0 4px 15px rgba(16,185,129,0.3)}
-
 html.lite .guia-ic{animation:none}
 html.lite .blob,html.lite .au-grid,html.lite .coin,html.lite .au-card::before,html.lite .au-main,html.lite .au-main::after,html.lite .au-logo{animation:none!important}
 html.lite .au-bars i{animation-duration:9s}
-
 @supports not (color:color-mix(in srgb,red,blue)){
   body{background:var(--bg)}
   .tabs{background:var(--bg)}
@@ -1034,7 +996,6 @@ html.lite .au-bars i{animation-duration:9s}
 </style>
 </head>
 <body>
-<!-- TELA DE LOGIN / CRIAR CONTA -->
 <div id="auth-screen" style="display:none;">
 <div class="au-bg" aria-hidden="true">
 <i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i><i class="blob b4"></i>
@@ -1080,7 +1041,6 @@ Continuar com Google
 <p class="au-switch"><span id="auth-switch-t">Ainda não tem conta?</span> <button type="button" id="auth-switch">Criar conta</button></p>
 </div>
 </div>
-<!-- APLICAÇÃO PRINCIPAL -->
 <div id="app-screen" style="display:none;">
 <header class="app-topbar">
 <div class="profile-welcome">
@@ -1141,7 +1101,7 @@ Continuar com Google
 <div class="settings-status" id="lem-status" aria-live="polite"></div>
 </section>
 <section class="settings-section">
-<h3>🛟 Backups automáticos</h3><p class="settings-help">A cada alteração o app guarda uma cópia na nuvem (no máximo uma a cada 10 minutos). Ficam todas as das últimas 48 horas e uma por dia até 45 dias. Você pode restaurar, baixar ou copiar qualquer uma.</p>
+<h3>🛟 Backups automáticos</h3><p class="settings-help">A cada alteração o app guarda uma cópia na nuvem (no máximo uma a cada 10 minutos). Ficam todas das últimas 48 horas e uma por dia até 45 dias. Você pode restaurar, baixar ou copiar qualquer uma.</p>
 <div class="settings-row"><button class="settings-action" id="bk-load" type="button">Ver meus backups</button><button class="settings-action" id="bk-now" type="button">Criar agora</button></div>
 <div class="settings-status" id="bk-status" aria-live="polite"></div>
 <div class="bk-list" id="bk-list"></div>
@@ -1154,9 +1114,6 @@ Continuar com Google
 </div>
 </div>
 <script>
-// ==========================================
-// CONFIGURAÇÃO DO FIREBASE
-// ==========================================
 var firebaseConfig = {
 apiKey: "AIzaSyC5i5n9bMtr--hj_mw0km1RGiGWLXwPTQU",
 authDomain: "finaceiro-f268b.firebaseapp.com",
@@ -1170,9 +1127,6 @@ var auth = firebase.auth();
 var db = firebase.firestore();
 var currentUserUid = null;
 var unsubscribeSync = null;
-// ==========================================
-// ESTADO E UTILITÁRIOS
-// ==========================================
 var LASTAV = [],
 MS = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"],
 WN = ["dom","seg","ter","qua","qui","sex","sáb"],
@@ -1480,12 +1434,6 @@ options:{responsive:true,maintainAspectRatio:false,animation:{duration:1000,easi
 plugins:[labelsPlugin]
 });
 }
-// ==========================================
-// JANELAS DO PRÓPRIO APP (substituem alert / confirm / prompt do navegador)
-// ==========================================
-// ==========================================
-// BOTÃO VOLTAR DO ANDROID: fecha janelas e volta de aba antes de sair do app
-// ==========================================
 var BACK = { stack: [], ignore: 0, fila: [], lastTab: undefined, navPop: false, seq: 0, nativo: false };
 function appPlugin() {
 try {
@@ -1608,9 +1556,6 @@ if (antes) S.real[ym] = antes; else delete S.real[ym];
 CC = {}; MC = {}; save(); draw();
 }
 var UI_TOAST = null;
-// ==========================================
-// GUIA DE BOAS-VINDAS (primeira abertura)
-// ==========================================
 var GUIA = { passo: 0, aberto: false };
 var GUIA_PASSOS = [
 { ic: "👋", t: "Bem-vindo ao seu Planejamento",
@@ -1701,9 +1646,6 @@ if (acao) { var b = document.createElement("button"); b.type = "button"; b.textC
 document.body.appendChild(t); UI_TOAST = t;
 setTimeout(function(){ if (t.parentNode) t.parentNode.removeChild(t); }, 10000);
 }
-// ==========================================
-// BACKUPS AUTOMÁTICOS (subcoleções users/{uid}/backups e backupdata)
-// ==========================================
 var BK = { last: 0, timer: null, MIN: 10 * 60 * 1000 };
 function bkMeta() { return db.collection("users").doc(currentUserUid).collection("backups"); }
 function bkData() { return db.collection("users").doc(currentUserUid).collection("backupdata"); }
@@ -1831,9 +1773,6 @@ if (l) l.addEventListener("click", bkListar);
 if (n) n.addEventListener("click", function(){ bkStatus("⏳ Criando backup…"); bkCriar("manual").then(function(ok){ if (ok) { bkStatus("✅ Backup criado às " + hora()); bkListar(); } }); });
 if (lst) lst.addEventListener("click", function(e){ var b = e.target.closest && e.target.closest("button[data-bk]"); if (b) bkAcao(b.getAttribute("data-bk"), b.getAttribute("data-id")); });
 })();
-// ==========================================
-// LEMBRETES DE CONTAS NO CELULAR (APK com o plugin @capacitor/local-notifications)
-// ==========================================
 var LEM = { timer: null };
 function lemPlugin() {
 try {
@@ -2422,9 +2361,6 @@ abertura = (pv <= S.start && !ic("carry")) ? (+S.ini[pv] || 0) : 0,
 v = mao(pv) + r.en - r.pg - gpm + abertura;
 S.ym = o; return (MC[ym] = v);
 }
-// ==========================================
-// SEÇÕES QUE ABREM/FECHAM NA ABA MÊS + RESERVA PRO MÊS QUE VEM
-// ==========================================
 var SEC_KEY = "plano-mes-abertas";
 var MESOP = (function(){ try { return JSON.parse(localStorage.getItem(SEC_KEY) || "{}") || {}; } catch(e) { return {}; } })();
 function secAberta(id, padrao) { return MESOP[id] === undefined ? !!padrao : !!MESOP[id]; }
@@ -2664,7 +2600,7 @@ red: "Não dá: o pote terá " + R(b.before) + ", faltam " + R(b.short) + " e a 
 venc.push({ d: k.d, o: 1, t: c.wnames + " · semana " + (k.d0 == k.d ? "dia " + k.d : "dias " + k.d0 + " a " + k.d), a: k.amt, done: false, short: k.sh, no: k.sh >= 0.005 && k.mn < -0.005,
 ok: "Dá: pagando " + R(k.amt) + " na semana, o pote fica com " + R(k.pote) + ".",
 amb: "Tire " + R(k.sh) + " da sobra em mãos pra fechar a semana.",
-red: "Não dá: faltam " + R(k.sh) + ' pra fechar a semana e a sobra em mãos não chega.' });
+red: "Não dá: faltam " + R(k.sh) + " pra fechar a semana e a sobra em mãos não chega." });
 });
 venc.sort(function(a, b){ return a.d - b.d || a.o - b.o; });
 if (venc.length) {
@@ -2960,7 +2896,7 @@ if (z.indexOf(",") >= 0) z = z.replace(/\./g, "").replace(",", ".");
 else if (/^-?\d{1,3}(\.\d{3})+$/.test(z)) z = z.replace(/\./g, "");
 return /^-?\d+(\.\d+)?$/.test(z) ? Number(z) : NaN;
 }
-function escHTML(v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","'":"&quot;","'":"&#39;"}[c]; }); }
+function escHTML(v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
 function registrarMovimento(tipo, descricao, valor, data, ref) {
 S.movimentos = Array.isArray(S.movimentos) ? S.movimentos : [];
 if (ref && S.movimentos.some(function(m){ return m && m.ref === ref; })) return false;
