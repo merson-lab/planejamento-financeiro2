@@ -1976,6 +1976,7 @@ function vMes() {
        '<div class="cd"><small>Falta pagar</small><b style="color:var(--bad)">' + R(fl) + '</b></div>' +
        '<div class="cd"><small>Entrou até agora</small><b>' + R(en) + '</b></div>' +
        '<div class="cd"><small>Sobra em mãos</small><b style="color:' + (sobraEmMaosLiquida < -0.005 ? "var(--bad)" : "var(--v)") + '">' + R(sobraEmMaosLiquida) + '</b></div>' +
+       (function(){ var realMes=(S.real||{})[S.ym], diaReal=realMes&&realMes.d?Math.max(1,Math.min(c.N,+realMes.d)):0, atualDia=diaReal&&c.days&&c.days[diaReal-1]; if(!realMes) { var hojeR=new Date(); if(hojeR.getFullYear()==c.Y&&hojeR.getMonth()+1==c.M) atualDia=c.days&&c.days[hojeR.getDate()-1]; } var poteAtual=realMes&&realMes.pote!=null?+realMes.pote:(atualDia?atualDia.pote:null), mimAtual=realMes&&realMes.mim!=null?+realMes.mim:(atualDia?atualDia.mim:null); return (poteAtual!=null?'<div class="cd"><small>Tenho no Pote agora</small><b style="color:var(--ok)">'+R(poteAtual)+'</b></div>':'')+(mimAtual!=null?'<div class="cd"><small>Tenho pra mim agora</small><b style="color:var(--v)">'+R(mimAtual)+'</b></div>':''); })() +
        '</div>' +
        (function(){
          var hojeSaldo = new Date(), diaSaldo = (hojeSaldo.getFullYear() === c.Y && hojeSaldo.getMonth()+1 === c.M) ? hojeSaldo.getDate() : (S.ym < currentYM ? c.N : 0),
