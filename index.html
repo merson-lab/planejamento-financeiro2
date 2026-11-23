@@ -497,7 +497,7 @@ function createEmptyState() {
     ym: currentYM, tipoRenda: "diaria", dia: 0, dias: [1,2,3,4,5],
     valQuinzena: 0, diaQ1: 5, diaQ2: 20, valMes: 0, diaMes: 5,
     ini: {}, paid: {}, gp: {}, rp: {}, carry: false, ex: [], bills: [],
-    start: currentYM, paidAt: {}, separado: {}, movimentos: [], ts: Date.now()
+    start: currentYM, paidAt: {}, separado: {}, movimentos: [], goals: [], goalDay: {}, goalDeposits: {}, ts: Date.now()
   };
 }
 
@@ -506,7 +506,7 @@ function getKey() {
 }
 
 function fix() {
-  S.rp = S.rp || {}; S.au = S.au || {}; S.dw = S.dw || {}; S.real = S.real || {}; S.paid = S.paid || {}; S.paidAt = S.paidAt || {}; S.separado = S.separado || {}; S.gp = S.gp || {}; S.ini = S.ini || {}; S.rv = S.rv || {}; S.bdw = S.bdw || {}; S.movimentos = Array.isArray(S.movimentos) ? S.movimentos : [];
+  S.rp = S.rp || {}; S.au = S.au || {}; S.dw = S.dw || {}; S.real = S.real || {}; S.paid = S.paid || {}; S.paidAt = S.paidAt || {}; S.separado = S.separado || {}; S.gp = S.gp || {}; S.ini = S.ini || {}; S.rv = S.rv || {}; S.bdw = S.bdw || {}; S.movimentos = Array.isArray(S.movimentos) ? S.movimentos : []; S.goals = Array.isArray(S.goals) ? S.goals : []; S.goalDay = S.goalDay || {}; S.goalDeposits = S.goalDeposits || {};
   if (!S.tipoRenda) S.tipoRenda = "diaria";
   if (S.dia === undefined) S.dia = 0;
   if (!Array.isArray(S.dias) || !S.dias.length) S.dias = [1,2,3,4,5];
@@ -1062,8 +1062,8 @@ function abrirGuia(revendo) {
   pinta();
 }
 
-var UNDO_KEYS = ["paid","paidAt","dw","movimentos","separado","au","bills","ex","rp","bdw"];
-var UNDO_ACOES = ["tog","separar","movin","movset","wkd","wkall","au","auall","delb","delx"];
+var UNDO_KEYS = ["paid","paidAt","dw","movimentos","separado","au","bills","ex","rp","bdw","goals","goalDay","goalDeposits"];
+var UNDO_ACOES = ["tog","separar","movin","movset","wkd","wkall","au","auall","delb","delx","metaAssign","metaDel"];
 function snapUndo() {
   var o = {};
   UNDO_KEYS.forEach(function(k){ o[k] = S[k] === undefined ? undefined : JSON.parse(JSON.stringify(S[k])); });
@@ -1713,7 +1713,7 @@ function calc() {
         var uw = wc[d];
         if (wd[d] && !miss[d]) {
           var gg = (t0 && d < t0) ? gP : gF;
-          dep = gg - uw; bal += dep; mim += dia - gg; udd = uw;
+          dep = gg - uw; bal += dep; mim += dia - gg; udd = uw; var goalKeyDay=S.ym+"d"+d; if(S.paid[S.ym+"d"+d] && (S.goalDay||{})[goalKeyDay]) mim -= Math.max(0, dia - gg);
         } else if (uw) { bal -= uw; udd = uw; }
       } else if (wc[d] > 0) {
         bal -= wc[d]; udd = wc[d];
@@ -1933,6 +1933,18 @@ function reservaCard(c) {
       '<div class="hoje-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div><small>Pote previsto no fim do mês</small><b>' + R(P) + '</b></div><div><small>Contas dos primeiros ' + nDias + ' dias</small><b>' + R(X) + '</b></div></div>' +
       secMini("reserva", "Como isso é calculado", '<div class="note">' + det + '</div>', false) + '</div>';
   } catch (e) { return ""; }
+}
+
+function metaSaldo(goalId) {
+  return Object.keys(S.goalDeposits || {}).reduce(function(total, k){ var d=S.goalDeposits[k]; return total + (d && d.goalId===goalId ? (Number(d.amount)||0) : 0); }, 0);
+}
+function metaNome(goalId) { var g=(S.goals||[]).filter(function(x){return x.id===goalId;})[0]; return g ? g.name : ""; }
+function metaSecaoMes() {
+  var goals=S.goals||[], h='<section class="card" style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><h2 style="margin:0">🎯 Metas</h2><small class="note">Diárias recebidas vinculadas vão direto para seus objetivos.</small></div><button class="add" data-a="metaNew" style="margin:0;white-space:nowrap">＋ Nova meta</button></div>';
+  if(!goals.length) return h+'<p class="note" style="margin-top:12px">Crie uma meta, como uma viagem ou algo que deseja comprar. Depois, vincule as diárias no Calendário.</p></section>';
+  goals.forEach(function(g){var saldo=metaSaldo(g.id), alvo=Math.max(0,Number(g.target)||0), pct=alvo>0?Math.min(100,saldo/alvo*100):0;
+    h+='<div class="card" style="margin-top:10px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><b>'+escHTML(g.name)+'</b><small class="note">Meta '+R(alvo)+'</small></div><button class="del" data-a="metaDel" data-i="'+g.id+'">Excluir</button></div><h2 style="margin:8px 0 2px;color:var(--v)">'+R(saldo)+'</h2><div class="bar" style="margin:8px 0"><i style="width:'+pct.toFixed(1)+'%;background:var(--v)"></i></div><small class="note">'+pct.toFixed(1)+'% alcançado · faltam '+R(Math.max(0,alvo-saldo))+'</small></div>';
+  }); return h+'</section>';
 }
 
 function vMes() {
@@ -2193,7 +2205,7 @@ function vMes() {
         (nAv ? '<div class="hoje-row" style="color:var(--mut)">🔔 ' + nAv + (nAv === 1 ? ' aviso' : ' avisos') + ' logo abaixo</div>' : '') + '</div>';
     } catch (e5) { hojeCard = ""; }
   }
-  return h.replace("<!--BAN-->", ban + spend + permH + snap).replace("<!--HOJE-->", hojeCard) + '<button type="button" class="sec-all" data-a="sectodos">↕ Abrir ou fechar todas as seções</button><button class="add" data-a="tab" data-i="2" style="background:var(--c);color:var(--bg);border-color:var(--c)">📅 Abrir calendário para marcar diárias e pagamentos →</button>';
+  return h.replace("<!--BAN-->", ban + spend + permH + snap).replace("<!--HOJE-->", hojeCard) + metaSecaoMes() + '<button type="button" class="sec-all" data-a="sectodos">↕ Abrir ou fechar todas as seções</button><button class="add" data-a="tab" data-i="2" style="background:var(--c);color:var(--bg);border-color:var(--c)">📅 Abrir calendário para marcar diárias e pagamentos →</button>';
 }
 
 function mkGrid(c, pre, on) {
@@ -2456,7 +2468,7 @@ function parseMoney(v) {
 }
 function escHTML(v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
 function registrarMovimento(tipo, descricao, valor, data, ref) {
-  S.movimentos = Array.isArray(S.movimentos) ? S.movimentos : [];
+  S.movimentos = Array.isArray(S.movimentos) ? S.movimentos : []; S.goals = Array.isArray(S.goals) ? S.goals : []; S.goalDay = S.goalDay || {}; S.goalDeposits = S.goalDeposits || {};
   // Idempotência: se uma referência de origem já existe, não cria outra cópia.
   if (ref && S.movimentos.some(function(m){ return m && m.ref === ref; })) return false;
   var id = Date.now() + Math.floor(Math.random()*1000);
@@ -2574,6 +2586,8 @@ function vCalendario() {
          '<span class="chk">' + (dn2 ? "✓" : "") + '</span>' +
          '<span class="grow"><b>' + (diaExtra(selDay) ? 'Diária extra' : 'Diária de Trabalho') + '</b><small>Entra ' + R(ic("dia")) + '</small></span>' +
          '</button>';
+    var metaDiaKey=S.ym+"d"+selDay, metaDiaId=(S.goalDay||{})[metaDiaKey], metaDiaNome=metaDiaId?metaNome(metaDiaId):"Sem meta";
+    h += '<button class="add" data-a="metaAssign" data-i="'+selDay+'" style="margin-top:6px;text-align:left">🎯 Destino da diária: <b>'+escHTML(metaDiaNome)+'</b> · alterar</button>';
     var parteMarcada = !!((S.separado || {})[S.ym + "d" + selDay]);
     var rAuto = (S.real || {})[S.ym], avisoAuto = !!rAuto && !parteMarcada && ehHoje(selDay) && selDay > (+rAuto.d || 0);
     var valorMinhaParte = Math.max(0, Number(ic("dia") || 0) - gDoDia(c, selDay)), valorPote = Math.max(0, Number(ic("dia") || 0) - valorMinhaParte);
@@ -2771,6 +2785,7 @@ document.addEventListener("click", async function(e){
     }
     if (vaiMarcar) S.paid[k] = true;
     else { delete S.paid[k]; delete S.paidAt[k]; }
+    if(/^d\d+$/.test(i)){ var gdKey=S.ym+"d"+i.slice(1), gid=(S.goalDay||{})[gdKey]; if(vaiMarcar&&gid){var calcMeta=calc(); S.goalDeposits[gdKey]={goalId:gid,amount:Math.max(0,(Number(ic("dia"))||0)-gDoDia(calcMeta,+i.slice(1))),date:S.ym+"-"+String(+i.slice(1)).padStart(2,"0")};} else if(!vaiMarcar) delete S.goalDeposits[gdKey]; }
   }
   else if (a == "separar") {
     S.separado = S.separado || {};
@@ -2884,6 +2899,16 @@ document.addEventListener("click", async function(e){
       uiAlert("Este navegador não suporta notificações.", { title: "Avisos" });
     }
   }
+  else if (a == "metaNew") {
+    var nomeMeta=await uiPrompt("Nome da meta (ex.: Viagem, Celular, Sonho):", "", {title:"Criar meta",placeholder:"Nome da meta"}); if(nomeMeta===null)return; nomeMeta=nomeMeta.trim(); if(!nomeMeta){await uiAlert("Digite um nome para a meta.");return;}
+    var alvoRaw=await uiPrompt("Quanto deseja juntar?", "", {title:"Valor da meta",input:"decimal",placeholder:"ex.: 2000,00"}); if(alvoRaw===null)return; var alvoMeta=parseMoney(alvoRaw); if(!isFinite(alvoMeta)||alvoMeta<=0){await uiAlert("Informe um valor maior que zero.");return;}
+    S.goals=S.goals||[]; S.goals.push({id:"goal"+Date.now(),name:nomeMeta,target:alvoMeta,createdAt:Date.now()});
+  }
+  else if (a == "metaAssign") {
+    var dayNum=+i, keyMeta=S.ym+"d"+dayNum, metas=S.goals||[]; if(!metas.length){await uiAlert("Crie uma meta primeiro, na seção Metas do Mês.");return;}
+    var opts=metas.map(function(g,idx){return (idx+1)+" — "+g.name+" (meta de "+R(g.target)+")";}).join("\n"), escolha=await uiPrompt("Digite o número da meta para destinar a parte livre desta diária. Digite 0 para remover o destino.\n\n"+opts,"",{title:"Destino da diária"}); if(escolha===null)return; var num=parseInt(escolha,10); if(num===0){delete S.goalDay[keyMeta];delete S.goalDeposits[keyMeta];} else if(num>=1&&num<=metas.length){var chosen=metas[num-1]; S.goalDay[keyMeta]=chosen.id; if(S.paid[S.ym+"d"+dayNum]) S.goalDeposits[keyMeta]={goalId:chosen.id,amount:Math.max(0,(Number(ic("dia"))||0)-gDoDia(calc(),dayNum)),date:S.ym+"-"+String(dayNum).padStart(2,"0")};} else {await uiAlert("Escolha um número válido.");return;}
+  }
+  else if (a == "metaDel") { var gd=(S.goals||[]).filter(function(g){return g.id===i;})[0]; if(gd && await uiConfirm("Excluir esta meta e os depósitos vinculados?",{title:"Excluir meta",ok:"Excluir",danger:true})){S.goals=S.goals.filter(function(g){return g.id!==i;}); Object.keys(S.goalDay||{}).forEach(function(k){if(S.goalDay[k]===i)delete S.goalDay[k];}); Object.keys(S.goalDeposits||{}).forEach(function(k){if(S.goalDeposits[k]&&S.goalDeposits[k].goalId===i)delete S.goalDeposits[k];});}}
   else if (a == "addb") S.bills.push({ id: "b" + Date.now(), n: "Nova conta", a: 0, d: 1, t: "m", i: S.ym, f: "", v: {} });
   else if (a == "addx") S.ex.push({ id: "x" + Date.now(), n: "Nova renda", a: 0, d: 1, i: S.ym, f: "", v: {} });
   else if (a == "delb" || a == "delx") {
