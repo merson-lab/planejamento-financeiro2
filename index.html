@@ -957,33 +957,43 @@ function novoReal(antes, f, v) {
   return { pote: f === "pote" ? val : (antes ? antes.pote : null), mim: f === "mim" ? val : (antes ? antes.mim : null) };
 }
 function ehHoje(dia) { var td = new Date(), p = S.ym.split("-"); return td.getFullYear() === +p[0] && td.getMonth() + 1 === +p[1] && td.getDate() === +dia; }
-function fmtCampo(n) { return (Math.round((Number(n) || 0) * 100) / 100).toFixed(2).replace(".", ",").replace(/,00$/, ""); }
-// Depois de marcar "Minha parte do dia" (hoje): confere o dinheiro de verdade e refaz o plano.
-async function abrirAcertoReal() {
-  var plano = planoDeHoje(); if (!plano) return false;
-  var r = await uiDialog({ title: "Acertar com a realidade",
-    msg: "Você marcou a sua parte de hoje. Confira o dinheiro de verdade e o app refaz o plano daqui pra frente.\n\nPelo plano, agora você teria: pote " + R(plano.pote) + " · pra você " + R(plano.mim) + ".\n\nInforme o saldo real depois de tudo que já aconteceu hoje (recebimentos, gastos e contas pagas).",
-    ok: "Acertar", cancelText: "Agora não",
-    campos: [{ rot: "Tenho no pote agora (R$)", valor: fmtCampo(plano.pote) }, { rot: "Tenho pra mim agora (R$)", valor: fmtCampo(plano.mim) }] });
-  if (r === null) return false;
-  var pote = parseMoney(r[0]), mim = parseMoney(r[1]);
-  if (!isFinite(pote) || !isFinite(mim) || pote < 0 || mim < 0) { await uiAlert("Informe valores válidos. Pote e dinheiro para você não podem ser negativos.", { title: "Valores inválidos" }); return false; }
-  pote = Math.round(pote * 100) / 100; mim = Math.round(mim * 100) / 100;
-  if (Math.abs(pote - plano.pote) < 0.005 && Math.abs(mim - plano.mim) < 0.005) { uiToast("O plano já bate com o seu dinheiro. Nada a acertar."); return false; }
-  var ymR = S.ym, antes = (S.real && S.real[ymR]) ? JSON.parse(JSON.stringify(S.real[ymR])) : null;
-  var movAntes = (S.movimentos || []).slice();
-  S.real = S.real || {}; S.real[ymR] = { d: new Date().getDate(), pote: pote, mim: mim };
-  var atualMov = (S.movimentos || []).reduce(function(t, m){ return t + (Number(m.valor) || 0); }, 0);
-  var diffMov = pote - atualMov;
-  if (Math.abs(diffMov) > 0.004) registrarMovimento("ajuste", "Acerto com a realidade", diffMov, dataLocalISO());
-  CC = {}; MC = {}; save(); draw();
-  uiToast("Plano refeito a partir do dia " + S.real[ymR].d + ".", "Desfazer", function(){ desfazerReal(ymR, antes, movAntes); });
-  return true;
+// Ao marcar "Minha parte do dia" (hoje), soma no acerto da realidade o que foi pro pote e a sua parte.
+// Só mexe se já existe um acerto neste mês; o plano é refeito a partir de hoje e os campos continuam editáveis.
+function atualizarRealComParte(dia, marcou) {
+  var r = (S.real || {})[S.ym]; if (!r || !ehHoje(dia)) return null;
+  var c = calc(), total = Number(ic("dia") || 0), vPote = Math.min(total, Math.max(0, gDoDia(c, dia))), vMim = Math.max(0, total - vPote),
+      cents = function(n){ return Math.round(n * 100) / 100; }, tem = function(x){ return x !== null && x !== undefined; },
+      antes = JSON.parse(JSON.stringify(r));
+  if (marcou) {
+    if (!(dia > (+r.d || 0))) return null;               // o acerto já é de hoje (ou mais novo): já inclui esta parte
+    r.dAnt = +r.d || 1;
+    if (tem(r.pote)) r.pote = cents(r.pote + vPote);
+    if (tem(r.mim)) r.mim = cents(r.mim + vMim);
+    r.d = dia; r.auto = { pote: tem(r.pote) ? r.pote : null, mim: tem(r.mim) ? r.mim : null };
+  } else {
+    // só desfaz se o acerto ainda é o que o app montou (se você editou os campos depois, nada muda)
+    if ((+r.d || 0) !== dia || !r.auto || r.auto.pote !== r.pote || r.auto.mim !== r.mim) return null;
+    if (tem(r.pote)) r.pote = Math.max(0, cents(r.pote - vPote));
+    if (tem(r.mim)) r.mim = cents(r.mim - vMim);
+    r.d = r.dAnt || 1; delete r.dAnt; delete r.auto;
+  }
+  CC = {}; MC = {};
+  return { ym: S.ym, antes: antes, depois: JSON.parse(JSON.stringify(r)), marcou: marcou };
 }
-function desfazerReal(ym, antes, movAntes) {
+function textoParteReal(x) {
+  var a = x.antes, d = x.depois, p = [];
+  if (a.pote !== null && a.pote !== undefined) p.push("Pote " + R(a.pote) + " → " + R(d.pote));
+  if (a.mim !== null && a.mim !== undefined) p.push("Pra você " + R(a.mim) + " → " + R(d.mim));
+  return (x.marcou ? "Acerto atualizado: " : "Acerto revertido: ") + p.join(" · ") + ".";
+}
+function desfazerParte(ym, sk, antes) {
+  S.real = S.real || {}; S.real[ym] = antes;
+  if (S.separado) delete S.separado[sk];
+  CC = {}; MC = {}; save(); draw();
+}
+function desfazerReal(ym, antes) {
   S.real = S.real || {};
   if (antes) S.real[ym] = antes; else delete S.real[ym];
-  if (Array.isArray(movAntes)) S.movimentos = movAntes;
   CC = {}; MC = {}; save(); draw();
 }
 var UI_TOAST = null;
@@ -2565,12 +2575,13 @@ function vCalendario() {
          '<span class="grow"><b>' + (diaExtra(selDay) ? 'Diária extra' : 'Diária de Trabalho') + '</b><small>Entra ' + R(ic("dia")) + '</small></span>' +
          '</button>';
     var parteMarcada = !!((S.separado || {})[S.ym + "d" + selDay]);
+    var rAuto = (S.real || {})[S.ym], avisoAuto = !!rAuto && !parteMarcada && ehHoje(selDay) && selDay > (+rAuto.d || 0);
     var valorMinhaParte = Math.max(0, Number(ic("dia") || 0) - gDoDia(c, selDay)), valorPote = Math.max(0, Number(ic("dia") || 0) - valorMinhaParte);
     h += '<button class="row' + (parteMarcada ? " done" : "") + '" data-a="separar" data-i="' + selDay + '" style="margin-top:6px;align-items:flex-start;">' +
          '<span class="chk">' + (parteMarcada ? "✓" : "") + '</span>' +
          '<span class="grow"><b>Minha parte do dia</b>' +
          '<span class="chips"><span class="chip chip-eu">💚 Pra você <b>' + R(valorMinhaParte) + '</b></span><span class="chip chip-pote">🫙 Pro pote <b>' + R(valorPote) + '</b></span></span>' +
-         '<small>' + (parteMarcada ? '✓ Você confirmou: ' + R(valorMinhaParte) + ' pra você e ' + R(valorPote) + ' no pote.' : 'Marque quando separar o dinheiro do pote e guardar a sua parte.' + (ehHoje(selDay) ? ' Ao marcar, o app confere com você o dinheiro de verdade.' : '')) +
+         '<small>' + (parteMarcada ? '✓ Você confirmou: ' + R(valorMinhaParte) + ' pra você e ' + R(valorPote) + ' no pote.' : 'Marque quando separar o dinheiro do pote e guardar a sua parte.' + (avisoAuto ? ' Ao marcar, o pote e o seu dinheiro do acerto sobem sozinhos (' + R(valorPote) + ' e ' + R(valorMinhaParte) + ').' : '')) +
          '</small></span></button>';
   }
   
@@ -2685,26 +2696,18 @@ document.addEventListener("change", async function(e){
   else if (sc == "r") {
     S.real = S.real || {};
     var ymR = S.ym, antesR = S.real[ymR] ? JSON.parse(JSON.stringify(S.real[ymR])) : null, nv = novoReal(antesR, f, v);
-    var movAntesR = (S.movimentos || []).slice();
     if (nv.pote !== null || nv.mim !== null) {
       var plano = planoDeHoje(), linhas = [];
       if (plano) linhas.push("Pelo plano, hoje você teria: pote " + R(plano.pote) + " · pra você " + R(plano.mim) + ".");
       linhas.push("Você informou: " + (nv.pote !== null ? "pote " + R(nv.pote) : "") + (nv.pote !== null && nv.mim !== null ? " · " : "") + (nv.mim !== null ? "pra você " + R(nv.mim) : "") + ".");
-      linhas.push("O plano será refeito a partir de hoje. Informe os saldos após tudo que já aconteceu hoje. O plano será recalculado para os próximos dias; dá para desfazer em seguida.");
+      linhas.push("O plano será refeito a partir de hoje. Se você ainda vai pagar uma conta hoje, informe o que vai sobrar depois dela. Dá para desfazer em seguida.");
       if (!(await uiConfirm(linhas.join("\n\n"), { title: "Acertar com a realidade?", ok: "Refazer o plano" }))) { draw(); return; }
     }
     S.real = S.real || {};
     var rr = S.real[ymR] || (S.real[ymR] = { d: 1, pote: null, mim: null });
-    rr.d = new Date().getDate(); rr.pote = nv.pote; rr.mim = nv.mim;
+    rr.d = new Date().getDate(); rr.pote = nv.pote; rr.mim = nv.mim; delete rr.auto; delete rr.dAnt;
     if (rr.pote === null && rr.mim === null) delete S.real[ymR];
-    else {
-      if (rr.pote !== null && rr.pote !== undefined) {
-        var atualMovR = (S.movimentos || []).reduce(function(t, m){ return t + (Number(m.valor) || 0); }, 0);
-        var diffMovR = (+rr.pote || 0) - atualMovR;
-        if (Math.abs(diffMovR) > 0.004) registrarMovimento("ajuste", "Acerto com a realidade", diffMovR, dataLocalISO());
-      }
-      avisoReal = { ym: ymR, antes: antesR, movAntes: movAntesR, d: rr.d };
-    }
+    else avisoReal = { ym: ymR, antes: antesR, d: rr.d };
   }
   else if (sc == "c") {
     if (f == "tipoRenda") setC("tipoRenda", v);
@@ -2728,10 +2731,8 @@ document.addEventListener("change", async function(e){
       }
     }
   }
-  // Invalida caches antes de redesenhar: mudanças de acerto/renda/contas recalculam todas as telas.
-  CC = {}; MC = {};
   save(); draw();
-  if (avisoReal) uiToast("Plano refeito a partir do dia " + avisoReal.d + ".", "Desfazer", function(){ desfazerReal(avisoReal.ym, avisoReal.antes, avisoReal.movAntes); });
+  if (avisoReal) uiToast("Plano refeito a partir do dia " + avisoReal.d + ".", "Desfazer", function(){ desfazerReal(avisoReal.ym, avisoReal.antes); });
 });
 
 document.addEventListener("click", async function(e){
@@ -2739,7 +2740,7 @@ document.addEventListener("click", async function(e){
   var a = t.dataset.a, i = t.dataset.i;
   var paidAntes = Object.assign({}, S.paid || {});
   var undoSnap = UNDO_ACOES.indexOf(a) >= 0 ? snapUndo() : null;
-  var pedirAcertoReal = false;
+  var avisoParte = null;
   if (a == "tab") { tab = +i; try{localStorage.setItem(startTabStorageKey(),String(tab));}catch(e){} }
   else if (a == "pm" || a == "nm") {
     var p = S.ym.split("-"), d = new Date(+p[0], +p[1] - 1 + (a == "nm" ? 1 : -1), 1);
@@ -2774,7 +2775,10 @@ document.addEventListener("click", async function(e){
   else if (a == "separar") {
     S.separado = S.separado || {};
     var sk = S.ym + "d" + i;
-    if (S.separado[sk]) delete S.separado[sk]; else { S.separado[sk] = true; pedirAcertoReal = ehHoje(i); }
+    var marcouParte = !S.separado[sk];
+    if (marcouParte) S.separado[sk] = true; else delete S.separado[sk];
+    avisoParte = atualizarRealComParte(+i, marcouParte);
+    if (avisoParte) avisoParte.sk = sk;
   }
   else if (a == "movin" || a == "movout") {
     var desc = await uiPrompt("Descrição da movimentação:", a === "movin" ? "Entrada no Pote" : "Saída do Pote", { title: a === "movin" ? "Entrada no pote" : "Saída do pote" });
@@ -2891,10 +2895,8 @@ document.addEventListener("click", async function(e){
     }
   }
   sincronizarMovimentosPagos(paidAntes, S.paid || {});
-  // Invalida caches em toda ação que altera dados financeiros ou marcações.
-  CC = {}; MC = {};
   save(); draw();
-  if (pedirAcertoReal) { await abrirAcertoReal(); return; }
+  if (avisoParte) { uiToast(textoParteReal(avisoParte), "Desfazer", function(){ desfazerParte(avisoParte.ym, avisoParte.sk, avisoParte.antes); }); return; }
   if (undoSnap) uiToast(msgDesfazer(a, typeof vaiMarcar !== "undefined" ? vaiMarcar : true), "Desfazer", function(){ restoreUndo(undoSnap); });
 });
 
