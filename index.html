@@ -259,6 +259,7 @@ label{font-size:12px;color:var(--mut);font-weight:600}
 .hoje-grid small{display:block;font-size:10.5px;line-height:1.25;color:var(--mut)}
 .hoje-grid b{display:block;margin-top:4px;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hoje-row{font-size:13px;line-height:1.5}
+.hoje-dica{margin-top:6px;padding:8px 10px;border-radius:12px;background:color-mix(in srgb,var(--v) 10%,transparent);color:var(--ink)}
 .guia{position:fixed;inset:0;z-index:2147483550;display:grid;place-items:center;padding:20px;overflow:auto;background:radial-gradient(70% 50% at 80% 10%,color-mix(in srgb,var(--c) 30%,transparent),transparent 65%),rgba(4,8,6,.94);animation:uiFade .25s ease both}
 .guia-box{position:relative;width:100%;max-width:420px;padding:28px 22px 22px;border-radius:30px;text-align:center;background:var(--card);border:1px solid color-mix(in srgb,var(--c) 30%,var(--line));box-shadow:0 30px 80px -40px var(--c);animation:uiPop .35s cubic-bezier(.2,.9,.2,1) both}
 .guia-skip{position:absolute;top:14px;right:16px;padding:6px 8px;border:0;background:none;color:var(--mut);font-size:13px;font-weight:600}
@@ -317,6 +318,7 @@ body{background:var(--bg)}
 .tabs{background:var(--bg)}
 .tabs button.on{background:rgba(166,255,61,.14)}
 .cards .cd,.big,.chart-panel,.hoje{background:var(--card)}
+.hoje-dica{background:rgba(166,255,61,.1)}
 .sec-btn{background:var(--card2)}
 .sec-ic{background:rgba(61,220,151,.14)}
 .guia{background:rgba(4,8,6,.96)}
@@ -497,7 +499,7 @@ function createEmptyState() {
     ym: currentYM, tipoRenda: "diaria", dia: 0, dias: [1,2,3,4,5],
     valQuinzena: 0, diaQ1: 5, diaQ2: 20, valMes: 0, diaMes: 5,
     ini: {}, paid: {}, gp: {}, rp: {}, carry: false, ex: [], bills: [],
-    start: currentYM, paidAt: {}, separado: {}, movimentos: [], goals: [], goalDay: {}, goalDeposits: {}, ts: Date.now()
+    start: currentYM, paidAt: {}, separado: {}, movimentos: [], ts: Date.now()
   };
 }
 
@@ -506,7 +508,7 @@ function getKey() {
 }
 
 function fix() {
-  S.rp = S.rp || {}; S.au = S.au || {}; S.dw = S.dw || {}; S.real = S.real || {}; S.paid = S.paid || {}; S.paidAt = S.paidAt || {}; S.separado = S.separado || {}; S.gp = S.gp || {}; S.ini = S.ini || {}; S.rv = S.rv || {}; S.bdw = S.bdw || {}; S.movimentos = Array.isArray(S.movimentos) ? S.movimentos : []; S.goals = Array.isArray(S.goals) ? S.goals : []; S.goalDay = S.goalDay || {}; S.goalDeposits = S.goalDeposits || {};
+  S.rp = S.rp || {}; S.au = S.au || {}; S.dw = S.dw || {}; S.real = S.real || {}; S.paid = S.paid || {}; S.paidAt = S.paidAt || {}; S.separado = S.separado || {}; S.gp = S.gp || {}; S.ini = S.ini || {}; S.rv = S.rv || {}; S.bdw = S.bdw || {}; S.movimentos = Array.isArray(S.movimentos) ? S.movimentos : [];
   if (!S.tipoRenda) S.tipoRenda = "diaria";
   if (S.dia === undefined) S.dia = 0;
   if (!Array.isArray(S.dias) || !S.dias.length) S.dias = [1,2,3,4,5];
@@ -957,40 +959,6 @@ function novoReal(antes, f, v) {
   return { pote: f === "pote" ? val : (antes ? antes.pote : null), mim: f === "mim" ? val : (antes ? antes.mim : null) };
 }
 function ehHoje(dia) { var td = new Date(), p = S.ym.split("-"); return td.getFullYear() === +p[0] && td.getMonth() + 1 === +p[1] && td.getDate() === +dia; }
-// Ao marcar "Minha parte do dia" (hoje), soma no acerto da realidade o que foi pro pote e a sua parte.
-// Só mexe se já existe um acerto neste mês; o plano é refeito a partir de hoje e os campos continuam editáveis.
-function atualizarRealComParte(dia, marcou) {
-  var r = (S.real || {})[S.ym]; if (!r || !ehHoje(dia)) return null;
-  var c = calc(), total = Number(ic("dia") || 0), vPote = Math.min(total, Math.max(0, gDoDia(c, dia))), vMim = Math.max(0, total - vPote),
-      cents = function(n){ return Math.round(n * 100) / 100; }, tem = function(x){ return x !== null && x !== undefined; },
-      antes = JSON.parse(JSON.stringify(r));
-  if (marcou) {
-    if (!(dia > (+r.d || 0))) return null;               // o acerto já é de hoje (ou mais novo): já inclui esta parte
-    r.dAnt = +r.d || 1;
-    if (tem(r.pote)) r.pote = cents(r.pote + vPote);
-    if (tem(r.mim)) r.mim = cents(r.mim + vMim);
-    r.d = dia; r.auto = { pote: tem(r.pote) ? r.pote : null, mim: tem(r.mim) ? r.mim : null };
-  } else {
-    // só desfaz se o acerto ainda é o que o app montou (se você editou os campos depois, nada muda)
-    if ((+r.d || 0) !== dia || !r.auto || r.auto.pote !== r.pote || r.auto.mim !== r.mim) return null;
-    if (tem(r.pote)) r.pote = Math.max(0, cents(r.pote - vPote));
-    if (tem(r.mim)) r.mim = cents(r.mim - vMim);
-    r.d = r.dAnt || 1; delete r.dAnt; delete r.auto;
-  }
-  CC = {}; MC = {};
-  return { ym: S.ym, antes: antes, depois: JSON.parse(JSON.stringify(r)), marcou: marcou };
-}
-function textoParteReal(x) {
-  var a = x.antes, d = x.depois, p = [];
-  if (a.pote !== null && a.pote !== undefined) p.push("Pote " + R(a.pote) + " → " + R(d.pote));
-  if (a.mim !== null && a.mim !== undefined) p.push("Pra você " + R(a.mim) + " → " + R(d.mim));
-  return (x.marcou ? "Acerto atualizado: " : "Acerto revertido: ") + p.join(" · ") + ".";
-}
-function desfazerParte(ym, sk, antes) {
-  S.real = S.real || {}; S.real[ym] = antes;
-  if (S.separado) delete S.separado[sk];
-  CC = {}; MC = {}; save(); draw();
-}
 function desfazerReal(ym, antes) {
   S.real = S.real || {};
   if (antes) S.real[ym] = antes; else delete S.real[ym];
@@ -1062,8 +1030,8 @@ function abrirGuia(revendo) {
   pinta();
 }
 
-var UNDO_KEYS = ["paid","paidAt","dw","movimentos","separado","au","bills","ex","rp","bdw","goals","goalDay","goalDeposits"];
-var UNDO_ACOES = ["tog","separar","movin","movset","wkd","wkall","au","auall","delb","delx","metaAssign","metaDel"];
+var UNDO_KEYS = ["paid","paidAt","dw","movimentos","separado","au","bills","ex","rp","bdw"];
+var UNDO_ACOES = ["tog","separar","movin","movset","wkd","wkall","au","auall","delb","delx"];
 function snapUndo() {
   var o = {};
   UNDO_KEYS.forEach(function(k){ o[k] = S[k] === undefined ? undefined : JSON.parse(JSON.stringify(S[k])); });
@@ -1668,8 +1636,9 @@ function calc() {
       t0 = isThisMonth ? td.getDate() : (isPastMonth ? N + 1 : 0),
       miss = [], missN = 0;
   if (t0) {
-    for (d = 1; d < t0; d++) if (tipo === "diaria" && wd[d] && !S.paid[S.ym + "d" + d]) { miss[d] = true; missN++; }
-    lumps.forEach(function(e){ if (e.d < t0 && !S.paid[S.ym + e.id]) { e.miss = true; missN++; } });
+    var limMiss = (CALC_HOJE_MARCADA && isThisMonth) ? t0 + 1 : t0;   // variante do cartão "Hoje": hoje só conta se já foi marcado
+    for (d = 1; d < limMiss; d++) if (tipo === "diaria" && wd[d] && !S.paid[S.ym + "d" + d]) { miss[d] = true; missN++; }
+    lumps.forEach(function(e){ if (e.d < limMiss && !S.paid[S.ym + e.id]) { e.miss = true; missN++; } });
   }
   var lumpDays = {};
   lumps.forEach(function(e){ if (!e.miss && e.amt > 0) { var o = lumpDays[e.d] || (lumpDays[e.d] = { d: e.d, amt: 0, ids: [] }); o.amt += e.amt; o.ids.push(e.id); } });
@@ -1713,7 +1682,7 @@ function calc() {
         var uw = wc[d];
         if (wd[d] && !miss[d]) {
           var gg = (t0 && d < t0) ? gP : gF;
-          dep = gg - uw; bal += dep; mim += dia - gg; udd = uw; var goalKeyDay=S.ym+"d"+d; if(S.paid[S.ym+"d"+d] && (S.goalDay||{})[goalKeyDay]) mim -= Math.max(0, dia - gg);
+          dep = gg - uw; bal += dep; mim += dia - gg; udd = uw;
         } else if (uw) { bal -= uw; udd = uw; }
       } else if (wc[d] > 0) {
         bal -= wc[d]; udd = wc[d];
@@ -1868,6 +1837,8 @@ var SEC_KEY = "plano-mes-abertas";
 var MESOP = (function(){ try { return JSON.parse(localStorage.getItem(SEC_KEY) || "{}") || {}; } catch(e) { return {}; } })();
 function secAberta(id, padrao) { return MESOP[id] === undefined ? !!padrao : !!MESOP[id]; }
 var LASTCH = null;
+var CALC_HOJE_MARCADA = false;
+function calcHojeMarcado() { CALC_HOJE_MARCADA = true; try { return calc(); } finally { CALC_HOJE_MARCADA = false; } }
 function secao(id, ic, titulo, resumo, html, padrao) {
   var ab = secAberta(id, padrao);
   return '<div class="sec" data-sec="' + id + '" data-open="' + (ab ? "1" : "0") + '">' +
@@ -1935,18 +1906,6 @@ function reservaCard(c) {
   } catch (e) { return ""; }
 }
 
-function metaSaldo(goalId) {
-  return Object.keys(S.goalDeposits || {}).reduce(function(total, k){ var d=S.goalDeposits[k]; return total + (d && d.goalId===goalId ? (Number(d.amount)||0) : 0); }, 0);
-}
-function metaNome(goalId) { var g=(S.goals||[]).filter(function(x){return x.id===goalId;})[0]; return g ? g.name : ""; }
-function metaSecaoMes() {
-  var goals=S.goals||[], h='<section class="card" style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><h2 style="margin:0">🎯 Metas</h2><small class="note">Diárias recebidas vinculadas vão direto para seus objetivos.</small></div><button class="add" data-a="metaNew" style="margin:0;white-space:nowrap">＋ Nova meta</button></div>';
-  if(!goals.length) return h+'<p class="note" style="margin-top:12px">Crie uma meta, como uma viagem ou algo que deseja comprar. Depois, vincule as diárias no Calendário.</p></section>';
-  goals.forEach(function(g){var saldo=metaSaldo(g.id), alvo=Math.max(0,Number(g.target)||0), pct=alvo>0?Math.min(100,saldo/alvo*100):0;
-    h+='<div class="card" style="margin-top:10px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><b>'+escHTML(g.name)+'</b><small class="note">Meta '+R(alvo)+'</small></div><button class="del" data-a="metaDel" data-i="'+g.id+'">Excluir</button></div><h2 style="margin:8px 0 2px;color:var(--v)">'+R(saldo)+'</h2><div class="bar" style="margin:8px 0"><i style="width:'+pct.toFixed(1)+'%;background:var(--v)"></i></div><small class="note">'+pct.toFixed(1)+'% alcançado · faltam '+R(Math.max(0,alvo-saldo))+'</small></div>';
-  }); return h+'</section>';
-}
-
 function vMes() {
   var c = calc(),
       h = '<div class="nav"><button data-a="pm">‹</button><b>' + MS[c.M-1] + ' de ' + c.Y + '</b><button data-a="nm">›</button></div>';
@@ -1956,6 +1915,7 @@ function vMes() {
   h += '<button class="add" data-a="tab" data-i="2" style="margin:0 0 12px;background:var(--c);color:var(--bg);border-color:var(--c)">📅 Abrir calendário para marcar diárias e pagamentos →</button>';
   var td = new Date();
   var isCurrentMonth = td.getFullYear() == c.Y && (td.getMonth() + 1) == c.M;
+  var cHM = isCurrentMonth ? calcHojeMarcado() : c;
   if (isCurrentMonth) {
     var hojeD = td.getDate();
     var avisosHoje = [];
@@ -2007,8 +1967,8 @@ function vMes() {
        '</div>' +
        (function(){
          var hojeSaldo = new Date(), diaSaldo = (hojeSaldo.getFullYear() === c.Y && hojeSaldo.getMonth()+1 === c.M) ? hojeSaldo.getDate() : (S.ym < currentYM ? c.N : 0),
-             acumuladoMim = diaSaldo > 0 && c.days && c.days[diaSaldo-1] ? c.days[diaSaldo-1].mim : 0,
-             saldoAnteriorMim = diaSaldo > 1 && c.days && c.days[diaSaldo-2] ? c.days[diaSaldo-2].mim : 0,
+             acumuladoMim = diaSaldo > 0 && cHM.days && cHM.days[diaSaldo-1] ? cHM.days[diaSaldo-1].mim : 0,
+             saldoAnteriorMim = diaSaldo > 1 && cHM.days && cHM.days[diaSaldo-2] ? cHM.days[diaSaldo-2].mim : 0,
              variacaoDiaMim = acumuladoMim - saldoAnteriorMim;
          return '<div class="card" style="border:2px solid var(--v);margin:10px 0 14px;padding:14px">' +
            '<small style="color:var(--mut);font-weight:700">DINHEIRO ACUMULADO PRA VOCÊ ' + (diaSaldo ? 'ATÉ O DIA ' + diaSaldo : '') + '</small>' +
@@ -2189,7 +2149,9 @@ function vMes() {
   var hojeCard = "";
   if (isCurrentMonth) {
     try {
-      var dHj = (c.days || [])[td.getDate() - 1],
+      var dHj = (cHM.days || [])[td.getDate() - 1],
+          diaHj = td.getDate(), pendHj = ic("tipoRenda") === "diaria" && c.days && c.days[diaHj - 1] && c.days[diaHj - 1].wk && !S.paid[S.ym + "d" + diaHj],
+          vPoteHj = Math.min(Number(ic("dia")) || 0, Math.max(0, gDoDia(c, diaHj))), vMimHj = Math.max(0, (Number(ic("dia")) || 0) - vPoteHj),
           stTxt = fut.length ? (futMin < -0.005 ? "🚨 Vai faltar dinheiro neste mês" : "⚠️ Vai precisar tirar da sua sobra") : (pas.length ? "ℹ️ Daqui pra frente os vencimentos estão cobertos" : "✅ O pote cobre tudo"),
           stCor = fut.length ? (futMin < -0.005 ? "var(--bad)" : "#d97706") : "var(--ok)",
           proxTxt = nx ? "<b>" + nx.n + "</b> · " + (nx.d === td.getDate() ? "hoje" : "dia " + nx.d) + " · " + R(nx.a) : "nenhuma conta pendente neste mês",
@@ -2202,10 +2164,11 @@ function vMes() {
           '<div><small>Pra você (acumulado)</small><b>' + (dHj ? R(dHj.mim) : "—") + '</b></div>' +
         '</div>' +
         '<div class="hoje-row">Próxima conta: ' + proxTxt + '</div>' +
+        (pendHj ? '<div class="hoje-row hoje-dica">💡 Marque a diária de hoje como recebida: <b>' + R(vPoteHj) + '</b> vão pro pote e <b>' + R(vMimHj) + '</b> ficam pra você.</div>' : '') +
         (nAv ? '<div class="hoje-row" style="color:var(--mut)">🔔 ' + nAv + (nAv === 1 ? ' aviso' : ' avisos') + ' logo abaixo</div>' : '') + '</div>';
     } catch (e5) { hojeCard = ""; }
   }
-  return h.replace("<!--BAN-->", ban + spend + permH + snap).replace("<!--HOJE-->", hojeCard) + metaSecaoMes() + '<button type="button" class="sec-all" data-a="sectodos">↕ Abrir ou fechar todas as seções</button><button class="add" data-a="tab" data-i="2" style="background:var(--c);color:var(--bg);border-color:var(--c)">📅 Abrir calendário para marcar diárias e pagamentos →</button>';
+  return h.replace("<!--BAN-->", ban + spend + permH + snap).replace("<!--HOJE-->", hojeCard) + '<button type="button" class="sec-all" data-a="sectodos">↕ Abrir ou fechar todas as seções</button><button class="add" data-a="tab" data-i="2" style="background:var(--c);color:var(--bg);border-color:var(--c)">📅 Abrir calendário para marcar diárias e pagamentos →</button>';
 }
 
 function mkGrid(c, pre, on) {
@@ -2468,7 +2431,7 @@ function parseMoney(v) {
 }
 function escHTML(v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
 function registrarMovimento(tipo, descricao, valor, data, ref) {
-  S.movimentos = Array.isArray(S.movimentos) ? S.movimentos : []; S.goals = Array.isArray(S.goals) ? S.goals : []; S.goalDay = S.goalDay || {}; S.goalDeposits = S.goalDeposits || {};
+  S.movimentos = Array.isArray(S.movimentos) ? S.movimentos : [];
   // Idempotência: se uma referência de origem já existe, não cria outra cópia.
   if (ref && S.movimentos.some(function(m){ return m && m.ref === ref; })) return false;
   var id = Date.now() + Math.floor(Math.random()*1000);
@@ -2584,18 +2547,15 @@ function vCalendario() {
     var dn2 = S.paid[S.ym + "d" + selDay];
     h += '<button class="row' + (dn2 ? " done" : "") + '" data-a="tog" data-i="d' + selDay + '" style="margin-top:8px;">' +
          '<span class="chk">' + (dn2 ? "✓" : "") + '</span>' +
-         '<span class="grow"><b>' + (diaExtra(selDay) ? 'Diária extra' : 'Diária de Trabalho') + '</b><small>Entra ' + R(ic("dia")) + '</small></span>' +
+         '<span class="grow"><b>' + (diaExtra(selDay) ? 'Diária extra' : 'Diária de Trabalho') + '</b><small>Entra ' + R(ic("dia")) + ' · ' + R(Math.min(Number(ic("dia")) || 0, Math.max(0, gDoDia(c, selDay)))) + ' pro pote e ' + R(Math.max(0, (Number(ic("dia")) || 0) - gDoDia(c, selDay))) + ' pra você</small></span>' +
          '</button>';
-    var metaDiaKey=S.ym+"d"+selDay, metaDiaId=(S.goalDay||{})[metaDiaKey], metaDiaNome=metaDiaId?metaNome(metaDiaId):"Sem meta";
-    h += '<button class="add" data-a="metaAssign" data-i="'+selDay+'" style="margin-top:6px;text-align:left">🎯 Destino da diária: <b>'+escHTML(metaDiaNome)+'</b> · alterar</button>';
     var parteMarcada = !!((S.separado || {})[S.ym + "d" + selDay]);
-    var rAuto = (S.real || {})[S.ym], avisoAuto = !!rAuto && !parteMarcada && ehHoje(selDay) && selDay > (+rAuto.d || 0);
     var valorMinhaParte = Math.max(0, Number(ic("dia") || 0) - gDoDia(c, selDay)), valorPote = Math.max(0, Number(ic("dia") || 0) - valorMinhaParte);
     h += '<button class="row' + (parteMarcada ? " done" : "") + '" data-a="separar" data-i="' + selDay + '" style="margin-top:6px;align-items:flex-start;">' +
          '<span class="chk">' + (parteMarcada ? "✓" : "") + '</span>' +
          '<span class="grow"><b>Minha parte do dia</b>' +
          '<span class="chips"><span class="chip chip-eu">💚 Pra você <b>' + R(valorMinhaParte) + '</b></span><span class="chip chip-pote">🫙 Pro pote <b>' + R(valorPote) + '</b></span></span>' +
-         '<small>' + (parteMarcada ? '✓ Você confirmou: ' + R(valorMinhaParte) + ' pra você e ' + R(valorPote) + ' no pote.' : 'Marque quando separar o dinheiro do pote e guardar a sua parte.' + (avisoAuto ? ' Ao marcar, o pote e o seu dinheiro do acerto sobem sozinhos (' + R(valorPote) + ' e ' + R(valorMinhaParte) + ').' : '')) +
+         '<small>' + (parteMarcada ? '✓ Você confirmou: ' + R(valorMinhaParte) + ' pra você e ' + R(valorPote) + ' no pote.' : 'Marque quando separar o dinheiro do pote e guardar a sua parte.' + '') +
          '</small></span></button>';
   }
   
@@ -2754,7 +2714,6 @@ document.addEventListener("click", async function(e){
   var a = t.dataset.a, i = t.dataset.i;
   var paidAntes = Object.assign({}, S.paid || {});
   var undoSnap = UNDO_ACOES.indexOf(a) >= 0 ? snapUndo() : null;
-  var avisoParte = null;
   if (a == "tab") { tab = +i; try{localStorage.setItem(startTabStorageKey(),String(tab));}catch(e){} }
   else if (a == "pm" || a == "nm") {
     var p = S.ym.split("-"), d = new Date(+p[0], +p[1] - 1 + (a == "nm" ? 1 : -1), 1);
@@ -2785,15 +2744,11 @@ document.addEventListener("click", async function(e){
     }
     if (vaiMarcar) S.paid[k] = true;
     else { delete S.paid[k]; delete S.paidAt[k]; }
-    if(/^d\d+$/.test(i)){ var gdKey=S.ym+"d"+i.slice(1), gid=(S.goalDay||{})[gdKey]; if(vaiMarcar&&gid){var calcMeta=calc(); S.goalDeposits[gdKey]={goalId:gid,amount:Math.max(0,(Number(ic("dia"))||0)-gDoDia(calcMeta,+i.slice(1))),date:S.ym+"-"+String(+i.slice(1)).padStart(2,"0")};} else if(!vaiMarcar) delete S.goalDeposits[gdKey]; }
   }
   else if (a == "separar") {
     S.separado = S.separado || {};
     var sk = S.ym + "d" + i;
-    var marcouParte = !S.separado[sk];
-    if (marcouParte) S.separado[sk] = true; else delete S.separado[sk];
-    avisoParte = atualizarRealComParte(+i, marcouParte);
-    if (avisoParte) avisoParte.sk = sk;
+    if (S.separado[sk]) delete S.separado[sk]; else S.separado[sk] = true;
   }
   else if (a == "movin" || a == "movout") {
     var desc = await uiPrompt("Descrição da movimentação:", a === "movin" ? "Entrada no Pote" : "Saída do Pote", { title: a === "movin" ? "Entrada no pote" : "Saída do pote" });
@@ -2899,16 +2854,6 @@ document.addEventListener("click", async function(e){
       uiAlert("Este navegador não suporta notificações.", { title: "Avisos" });
     }
   }
-  else if (a == "metaNew") {
-    var nomeMeta=await uiPrompt("Nome da meta (ex.: Viagem, Celular, Sonho):", "", {title:"Criar meta",placeholder:"Nome da meta"}); if(nomeMeta===null)return; nomeMeta=nomeMeta.trim(); if(!nomeMeta){await uiAlert("Digite um nome para a meta.");return;}
-    var alvoRaw=await uiPrompt("Quanto deseja juntar?", "", {title:"Valor da meta",input:"decimal",placeholder:"ex.: 2000,00"}); if(alvoRaw===null)return; var alvoMeta=parseMoney(alvoRaw); if(!isFinite(alvoMeta)||alvoMeta<=0){await uiAlert("Informe um valor maior que zero.");return;}
-    S.goals=S.goals||[]; S.goals.push({id:"goal"+Date.now(),name:nomeMeta,target:alvoMeta,createdAt:Date.now()});
-  }
-  else if (a == "metaAssign") {
-    var dayNum=+i, keyMeta=S.ym+"d"+dayNum, metas=S.goals||[]; if(!metas.length){await uiAlert("Crie uma meta primeiro, na seção Metas do Mês.");return;}
-    var opts=metas.map(function(g,idx){return (idx+1)+" — "+g.name+" (meta de "+R(g.target)+")";}).join("\n"), escolha=await uiPrompt("Digite o número da meta para destinar a parte livre desta diária. Digite 0 para remover o destino.\n\n"+opts,"",{title:"Destino da diária"}); if(escolha===null)return; var num=parseInt(escolha,10); if(num===0){delete S.goalDay[keyMeta];delete S.goalDeposits[keyMeta];} else if(num>=1&&num<=metas.length){var chosen=metas[num-1]; S.goalDay[keyMeta]=chosen.id; if(S.paid[S.ym+"d"+dayNum]) S.goalDeposits[keyMeta]={goalId:chosen.id,amount:Math.max(0,(Number(ic("dia"))||0)-gDoDia(calc(),dayNum)),date:S.ym+"-"+String(dayNum).padStart(2,"0")};} else {await uiAlert("Escolha um número válido.");return;}
-  }
-  else if (a == "metaDel") { var gd=(S.goals||[]).filter(function(g){return g.id===i;})[0]; if(gd && await uiConfirm("Excluir esta meta e os depósitos vinculados?",{title:"Excluir meta",ok:"Excluir",danger:true})){S.goals=S.goals.filter(function(g){return g.id!==i;}); Object.keys(S.goalDay||{}).forEach(function(k){if(S.goalDay[k]===i)delete S.goalDay[k];}); Object.keys(S.goalDeposits||{}).forEach(function(k){if(S.goalDeposits[k]&&S.goalDeposits[k].goalId===i)delete S.goalDeposits[k];});}}
   else if (a == "addb") S.bills.push({ id: "b" + Date.now(), n: "Nova conta", a: 0, d: 1, t: "m", i: S.ym, f: "", v: {} });
   else if (a == "addx") S.ex.push({ id: "x" + Date.now(), n: "Nova renda", a: 0, d: 1, i: S.ym, f: "", v: {} });
   else if (a == "delb" || a == "delx") {
@@ -2921,7 +2866,6 @@ document.addEventListener("click", async function(e){
   }
   sincronizarMovimentosPagos(paidAntes, S.paid || {});
   save(); draw();
-  if (avisoParte) { uiToast(textoParteReal(avisoParte), "Desfazer", function(){ desfazerParte(avisoParte.ym, avisoParte.sk, avisoParte.antes); }); return; }
   if (undoSnap) uiToast(msgDesfazer(a, typeof vaiMarcar !== "undefined" ? vaiMarcar : true), "Desfazer", function(){ restoreUndo(undoSnap); });
 });
 
