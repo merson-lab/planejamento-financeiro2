@@ -1042,6 +1042,15 @@ function restoreUndo(o) {
   fix(); CC = {}; MC = {}; save(); draw();
   uiToast("Pronto, a ação foi desfeita.");
 }
+// Explica, na hora, o que a marcação de uma diária mudou no cartão "Hoje".
+function textoEfeitoHoje(i, antes) {
+  var dia = +i.slice(1), hoje = new Date().getDate(), marcou = !!S.paid[S.ym + i], d = calcHojeMarcado().days[hoje - 1],
+      dp = Math.round((d.pote - antes.pote) * 100) / 100, dm = Math.round((d.mim - antes.mim) * 100) / 100,
+      f = function(n){ return (n >= 0 ? "+" : "−") + R(Math.abs(n)); };
+  if (marcou && dia > hoje) return "Diária de um dia que ainda não chegou. O cartão “Hoje” só soma até hoje: ela entra quando o dia chegar.";
+  if (Math.abs(dp) < 0.005 && Math.abs(dm) < 0.005) return marcou ? "Diária marcada. O cartão “Hoje” não mudou." : "Marcação removida. O cartão “Hoje” não mudou.";
+  return (marcou ? "Diária recebida: " : "Diária desmarcada: ") + "pote " + f(dp) + " · pra você " + f(dm) + ".";
+}
 function msgDesfazer(a, marcou) {
   if (a === "tog") return marcou ? "Marcado como feito." : "Marcação removida.";
   if (a === "separar") return "Parte do dia atualizada.";
@@ -2714,6 +2723,8 @@ document.addEventListener("click", async function(e){
   var a = t.dataset.a, i = t.dataset.i;
   var paidAntes = Object.assign({}, S.paid || {});
   var undoSnap = UNDO_ACOES.indexOf(a) >= 0 ? snapUndo() : null;
+  var hojeAntes = null;
+  if (a == "tog" && /^d\d+$/.test(i || "") && S.ym === currentYM) { try { var cA = calcHojeMarcado(), dA = cA.days[new Date().getDate() - 1]; hojeAntes = { pote: dA.pote, mim: dA.mim }; } catch(eH) {} }
   if (a == "tab") { tab = +i; try{localStorage.setItem(startTabStorageKey(),String(tab));}catch(e){} }
   else if (a == "pm" || a == "nm") {
     var p = S.ym.split("-"), d = new Date(+p[0], +p[1] - 1 + (a == "nm" ? 1 : -1), 1);
@@ -2866,7 +2877,9 @@ document.addEventListener("click", async function(e){
   }
   sincronizarMovimentosPagos(paidAntes, S.paid || {});
   save(); draw();
-  if (undoSnap) uiToast(msgDesfazer(a, typeof vaiMarcar !== "undefined" ? vaiMarcar : true), "Desfazer", function(){ restoreUndo(undoSnap); });
+  var msgHoje = null;
+  if (hojeAntes) { try { msgHoje = textoEfeitoHoje(i, hojeAntes); } catch(eH2) {} }
+  if (undoSnap) uiToast(msgHoje || msgDesfazer(a, typeof vaiMarcar !== "undefined" ? vaiMarcar : true), "Desfazer", function(){ restoreUndo(undoSnap); });
 });
 
 try {
