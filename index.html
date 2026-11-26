@@ -1044,12 +1044,11 @@ function restoreUndo(o) {
 }
 // Explica, na hora, o que a marcação de uma diária mudou no cartão "Hoje".
 function textoEfeitoHoje(i, antes) {
-  var dia = +i.slice(1), hoje = new Date().getDate(), marcou = !!S.paid[S.ym + i], d = calcHojeMarcado().days[hoje - 1],
+  var dia = +i.slice(1), hoje = new Date().getDate(), marcou = !!S.paid[S.ym + i], d = estadoHoje(),
       dp = Math.round((d.pote - antes.pote) * 100) / 100, dm = Math.round((d.mim - antes.mim) * 100) / 100,
       f = function(n){ return (n >= 0 ? "+" : "−") + R(Math.abs(n)); };
-  if (marcou && dia > hoje) return "Diária de um dia que ainda não chegou. O cartão “Hoje” só soma até hoje: ela entra quando o dia chegar.";
   if (Math.abs(dp) < 0.005 && Math.abs(dm) < 0.005) return marcou ? "Diária marcada. O cartão “Hoje” não mudou." : "Marcação removida. O cartão “Hoje” não mudou.";
-  return (marcou ? "Diária recebida: " : "Diária desmarcada: ") + "pote " + f(dp) + " · pra você " + f(dm) + ".";
+  return (marcou ? (dia > hoje ? "Diária de um dia à frente recebida: " : "Diária recebida: ") : "Diária desmarcada: ") + "pote " + f(dp) + " · pra você " + f(dm) + ".";
 }
 function msgDesfazer(a, marcou) {
   if (a === "tog") return marcou ? "Marcado como feito." : "Marcação removida.";
@@ -1847,6 +1846,19 @@ var MESOP = (function(){ try { return JSON.parse(localStorage.getItem(SEC_KEY) |
 function secAberta(id, padrao) { return MESOP[id] === undefined ? !!padrao : !!MESOP[id]; }
 var LASTCH = null;
 var CALC_HOJE_MARCADA = false;
+// Diárias de dias à frente que você já marcou como recebidas (recebeu adiantado): entram no "Hoje" na hora.
+function diariasAdiante(c, hoje) {
+  var r = { pote: 0, mim: 0, n: 0 }, dia = Number(ic("dia") || 0);
+  if (ic("tipoRenda") !== "diaria") return r;
+  for (var d = hoje + 1; d <= c.N; d++) {
+    if (wdOn(d) && S.paid[S.ym + "d" + d]) { var gp = Math.min(dia, Math.max(0, gDoDia(c, d))); r.pote += gp; r.mim += dia - gp; r.n++; }
+  }
+  return r;
+}
+function estadoHoje() {
+  var c = calc(), hoje = new Date().getDate(), d = calcHojeMarcado().days[hoje - 1], add = diariasAdiante(c, hoje);
+  return { pote: d.pote + add.pote, mim: d.mim + add.mim, n: add.n };
+}
 function calcHojeMarcado() { CALC_HOJE_MARCADA = true; try { return calc(); } finally { CALC_HOJE_MARCADA = false; } }
 function secao(id, ic, titulo, resumo, html, padrao) {
   var ab = secAberta(id, padrao);
@@ -1925,6 +1937,7 @@ function vMes() {
   var td = new Date();
   var isCurrentMonth = td.getFullYear() == c.Y && (td.getMonth() + 1) == c.M;
   var cHM = isCurrentMonth ? calcHojeMarcado() : c;
+  var adiante = isCurrentMonth ? diariasAdiante(c, new Date().getDate()) : { pote: 0, mim: 0, n: 0 };
   if (isCurrentMonth) {
     var hojeD = td.getDate();
     var avisosHoje = [];
@@ -1976,9 +1989,10 @@ function vMes() {
        '</div>' +
        (function(){
          var hojeSaldo = new Date(), diaSaldo = (hojeSaldo.getFullYear() === c.Y && hojeSaldo.getMonth()+1 === c.M) ? hojeSaldo.getDate() : (S.ym < currentYM ? c.N : 0),
-             acumuladoMim = diaSaldo > 0 && cHM.days && cHM.days[diaSaldo-1] ? cHM.days[diaSaldo-1].mim : 0,
+             acumuladoBase = diaSaldo > 0 && cHM.days && cHM.days[diaSaldo-1] ? cHM.days[diaSaldo-1].mim : 0,
+              acumuladoMim = acumuladoBase + (isCurrentMonth ? adiante.mim : 0),
              saldoAnteriorMim = diaSaldo > 1 && cHM.days && cHM.days[diaSaldo-2] ? cHM.days[diaSaldo-2].mim : 0,
-             variacaoDiaMim = acumuladoMim - saldoAnteriorMim;
+             variacaoDiaMim = acumuladoBase - saldoAnteriorMim;
          return '<div class="card" style="border:2px solid var(--v);margin:10px 0 14px;padding:14px">' +
            '<small style="color:var(--mut);font-weight:700">DINHEIRO ACUMULADO PRA VOCÊ ' + (diaSaldo ? 'ATÉ O DIA ' + diaSaldo : '') + '</small>' +
            '<div style="font-size:30px;font-weight:850;color:var(--v);margin:5px 0">' + R(acumuladoMim) + '</div>' +
@@ -2169,10 +2183,11 @@ function vMes() {
         '<div class="hoje-top"><b>HOJE · ' + WN[td.getDay()] + ', ' + td.getDate() + ' de ' + MS[c.M-1].toLowerCase() + '</b><span style="color:' + stCor + '">' + stTxt + '</span></div>' +
         '<div class="hoje-grid">' +
           '<div><small>Posso gastar hoje</small><b style="color:' + corHoje + '">' + (podeHoje === null ? "—" : "R$ " + podeHoje) + '</b></div>' +
-          '<div><small>Pote das contas</small><b>' + (dHj ? R(dHj.pote) : "—") + '</b></div>' +
-          '<div><small>Pra você (acumulado)</small><b>' + (dHj ? R(dHj.mim) : "—") + '</b></div>' +
+          '<div><small>Pote das contas</small><b>' + (dHj ? R(dHj.pote + adiante.pote) : "—") + '</b></div>' +
+          '<div><small>Pra você (acumulado)</small><b>' + (dHj ? R(dHj.mim + adiante.mim) : "—") + '</b></div>' +
         '</div>' +
         '<div class="hoje-row">Próxima conta: ' + proxTxt + '</div>' +
+        (adiante.n ? '<div class="hoje-row" style="color:var(--mut)">Inclui ' + adiante.n + (adiante.n === 1 ? ' diária' : ' diárias') + ' de dias à frente que você já marcou.</div>' : '') +
         (pendHj ? '<div class="hoje-row hoje-dica">💡 Marque a diária de hoje como recebida: <b>' + R(vPoteHj) + '</b> vão pro pote e <b>' + R(vMimHj) + '</b> ficam pra você.</div>' : '') +
         (nAv ? '<div class="hoje-row" style="color:var(--mut)">🔔 ' + nAv + (nAv === 1 ? ' aviso' : ' avisos') + ' logo abaixo</div>' : '') + '</div>';
     } catch (e5) { hojeCard = ""; }
@@ -2724,7 +2739,7 @@ document.addEventListener("click", async function(e){
   var paidAntes = Object.assign({}, S.paid || {});
   var undoSnap = UNDO_ACOES.indexOf(a) >= 0 ? snapUndo() : null;
   var hojeAntes = null;
-  if (a == "tog" && /^d\d+$/.test(i || "") && S.ym === currentYM) { try { var cA = calcHojeMarcado(), dA = cA.days[new Date().getDate() - 1]; hojeAntes = { pote: dA.pote, mim: dA.mim }; } catch(eH) {} }
+  if (a == "tog" && /^d\d+$/.test(i || "") && S.ym === currentYM) { try { var eA = estadoHoje(); hojeAntes = { pote: eA.pote, mim: eA.mim }; } catch(eH) {} }
   if (a == "tab") { tab = +i; try{localStorage.setItem(startTabStorageKey(),String(tab));}catch(e){} }
   else if (a == "pm" || a == "nm") {
     var p = S.ym.split("-"), d = new Date(+p[0], +p[1] - 1 + (a == "nm" ? 1 : -1), 1);
